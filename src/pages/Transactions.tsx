@@ -198,6 +198,178 @@ export const Transactions: React.FC = () => {
   // Filter categories by form transaction type
   const availableCategoriesForForm = categories.filter(c => c.type === type);
 
+  if (modalOpen) {
+    return (
+      <div className="max-w-2xl mx-auto animate-slide-up pb-12">
+        {/* Form Card */}
+        <div className="glass-panel rounded-3xl border border-[var(--color-border)] p-5 sm:p-8 shadow-2xl bg-[var(--color-card)]">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 mb-5 sm:mb-6">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100">
+              {editingTx ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
+            </h3>
+            <button
+              onClick={closeModal}
+              className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-all cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {formError && (
+            <div className="mb-4 p-3 text-xs rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-455 animate-slide-up">
+              {formError}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Type Switcher */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                Jenis Transaksi
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setType('expense');
+                    const expenseCats = categories.filter(c => c.type === 'expense');
+                    setCategoryId(expenseCats[0]?.id || '');
+                  }}
+                  className={`py-2.5 px-4 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                    type === 'expense'
+                      ? 'bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-455 shadow-md glow-rose'
+                      : 'bg-[var(--color-input)] border-[var(--color-border)] text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  Pengeluaran (-)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setType('income');
+                    const incomeCats = categories.filter(c => c.type === 'income');
+                    setCategoryId(incomeCats[0]?.id || '');
+                  }}
+                  className={`py-2.5 px-4 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                    type === 'income'
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-450 shadow-md glow-emerald'
+                      : 'bg-[var(--color-input)] border-[var(--color-border)] text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  Pemasukan (+)
+                </button>
+              </div>
+            </div>
+
+            {/* Amount & Date in Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Nominal (Rupiah)
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Contoh: 50000"
+                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2.5 px-3.5 text-sm text-[var(--color-text-primary)] transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Tanggal Transaksi
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={transactionDate}
+                  onChange={(e) => setTransactionDate(e.target.value)}
+                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2 px-3 text-sm text-[var(--color-text-primary)] transition-all cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Wallet & Category in Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Wallet Sumber
+                </label>
+                <select
+                  required
+                  value={walletId}
+                  onChange={(e) => setWalletId(e.target.value)}
+                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2.5 px-3 text-sm text-[var(--color-text-primary)] transition-all cursor-pointer"
+                >
+                  <option value="">Pilih Wallet</option>
+                  {wallets.map(w => (
+                    <option key={w.id} value={w.id}>{w.name} (Saldo: {formatIDR(w.balance)})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Kategori
+                </label>
+                <select
+                  required
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2.5 px-3 text-sm text-[var(--color-text-primary)] transition-all cursor-pointer"
+                >
+                  <option value="">Pilih Kategori</option>
+                  {availableCategoriesForForm.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                {availableCategoriesForForm.length === 0 && (
+                  <p className="text-[10px] text-amber-500 mt-1.5">
+                    Belum ada kategori custom tipe ini. Silakan tambahkan di halaman Kategori.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                Catatan / Deskripsi
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Keterangan transaksi..."
+                rows={3}
+                className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2.5 px-3.5 text-sm text-[var(--color-text-primary)] transition-all"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 font-bold text-xs border border-slate-300 dark:border-slate-800 hover:bg-slate-200/30 dark:hover:bg-slate-850 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={addMutation.isPending || updateMutation.isPending}
+                className="px-5 py-2 font-bold text-xs rounded-xl text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-md glow-brand transition-all cursor-pointer"
+              >
+                {addMutation.isPending || updateMutation.isPending ? 'Menyimpan...' : 'Simpan Transaksi'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -388,176 +560,6 @@ export const Transactions: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Modal Form (Add / Edit) */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg glass-panel rounded-3xl border border-[var(--color-border)] p-8 shadow-2xl animate-scale-up bg-[var(--color-card)]">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 mb-6">
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                {editingTx ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
-              </h3>
-              <button
-                onClick={closeModal}
-                className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-all cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {formError && (
-              <div className="mb-5 p-3 text-xs rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 animate-slide-up">
-                {formError}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Type Switcher */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                  Jenis Transaksi
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setType('expense');
-                      const expenseCats = categories.filter(c => c.type === 'expense');
-                      setCategoryId(expenseCats[0]?.id || '');
-                    }}
-                    className={`py-2 px-4 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
-                      type === 'expense'
-                        ? 'bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-450 shadow-md glow-rose'
-                        : 'bg-[var(--color-input)] border-[var(--color-border)] text-slate-400'
-                    }`}
-                  >
-                    Pengeluaran (-)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setType('income');
-                      const incomeCats = categories.filter(c => c.type === 'income');
-                      setCategoryId(incomeCats[0]?.id || '');
-                    }}
-                    className={`py-2 px-4 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
-                      type === 'income'
-                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-450 shadow-md glow-emerald'
-                        : 'bg-[var(--color-input)] border-[var(--color-border)] text-slate-400'
-                    }`}
-                  >
-                    Pemasukan (+)
-                  </button>
-                </div>
-              </div>
-
-              {/* Amount & Date in Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                    Nominal (Rupiah)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Contoh: 50000"
-                    className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2.5 px-3.5 text-xs text-[var(--color-text-primary)] transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                    Tanggal Transaksi
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={transactionDate}
-                    onChange={(e) => setTransactionDate(e.target.value)}
-                    className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2 px-3 text-xs text-[var(--color-text-primary)] transition-all cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* Wallet & Category in Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                    Wallet Sumber
-                  </label>
-                  <select
-                    required
-                    value={walletId}
-                    onChange={(e) => setWalletId(e.target.value)}
-                    className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2.5 px-3 text-xs text-[var(--color-text-primary)] transition-all cursor-pointer"
-                  >
-                    <option value="">Pilih Wallet</option>
-                    {wallets.map(w => (
-                      <option key={w.id} value={w.id}>{w.name} (Saldo: {formatIDR(w.balance)})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                    Kategori
-                  </label>
-                  <select
-                    required
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2.5 px-3 text-xs text-[var(--color-text-primary)] transition-all cursor-pointer"
-                  >
-                    <option value="">Pilih Kategori</option>
-                    {availableCategoriesForForm.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  {availableCategoriesForForm.length === 0 && (
-                    <p className="text-[10px] text-amber-500 mt-1.5">
-                      Belum ada kategori custom tipe ini. Silakan tambahkan di halaman Kategori.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                  Catatan / Deskripsi
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Keterangan transaksi..."
-                  rows={3}
-                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-2.5 px-3.5 text-xs text-[var(--color-text-primary)] transition-all"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-4 py-2 font-bold text-xs border border-slate-300 dark:border-slate-800 hover:bg-slate-200/30 dark:hover:bg-slate-850 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={addMutation.isPending || updateMutation.isPending}
-                  className="px-5 py-2 font-bold text-xs rounded-xl text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-md glow-brand transition-all cursor-pointer"
-                >
-                  {addMutation.isPending || updateMutation.isPending ? 'Menyimpan...' : 'Simpan Transaksi'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

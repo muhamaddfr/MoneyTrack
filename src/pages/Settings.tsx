@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { dbService } from '../services/db';
-import { User, Sun, Moon, Info, Settings as SettingsIcon, Check } from 'lucide-react';
+import { User, Sun, Moon, Info, Settings as SettingsIcon, Check, Monitor } from 'lucide-react';
 
 export const Settings: React.FC = () => {
   const { user, displayName, updateProfileName } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   const [nameInput, setNameInput] = useState(displayName);
   const [success, setSuccess] = useState<string | null>(null);
@@ -108,7 +108,9 @@ export const Settings: React.FC = () => {
       {/* Theme Toggler Card */}
       <div className="glass-panel rounded-2xl p-6 border border-[var(--color-border)] space-y-4">
         <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center gap-2">
-          {theme === 'dark' ? <Moon size={16} className="text-violet-500 dark:text-violet-400" /> : <Sun size={16} className="text-violet-500 dark:text-violet-400" />}
+          {theme === 'dark' && <Moon size={16} className="text-violet-500 dark:text-violet-400" />}
+          {theme === 'light' && <Sun size={16} className="text-violet-500 dark:text-violet-400" />}
+          {theme === 'system' && <Monitor size={16} className="text-violet-500 dark:text-violet-400" />}
           Tema Tampilan
         </h3>
 
@@ -116,30 +118,42 @@ export const Settings: React.FC = () => {
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
             Pilih Mode Tampilan
           </label>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <button
               type="button"
-              onClick={() => { if (theme !== 'light') toggleTheme(); }}
+              onClick={() => setTheme('light')}
               className={`p-4 rounded-xl font-bold text-xs border transition-all flex flex-col items-center gap-2 cursor-pointer ${
                 theme === 'light'
-                  ? 'bg-violet-600/10 border-violet-500/30 text-violet-600 shadow-md'
-                  : 'bg-[var(--color-input)] border-[var(--color-border)] text-slate-400 hover:text-slate-200'
+                  ? 'bg-violet-600/10 border-violet-500/30 text-violet-600 dark:text-violet-400 shadow-md'
+                  : 'bg-[var(--color-input)] border-[var(--color-border)] text-slate-500 dark:text-slate-450 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Sun size={20} />
-              Mode Terang (Light)
+              Mode Terang
             </button>
             <button
               type="button"
-              onClick={() => { if (theme !== 'dark') toggleTheme(); }}
+              onClick={() => setTheme('dark')}
               className={`p-4 rounded-xl font-bold text-xs border transition-all flex flex-col items-center gap-2 cursor-pointer ${
                 theme === 'dark'
-                  ? 'bg-violet-600/10 border-violet-500/30 text-violet-400 shadow-md glow-brand'
-                  : 'bg-[var(--color-input)] border-[var(--color-border)] text-slate-450 hover:text-slate-200'
+                  ? 'bg-violet-600/10 border-violet-500/30 text-violet-600 dark:text-violet-400 shadow-md glow-brand'
+                  : 'bg-[var(--color-input)] border-[var(--color-border)] text-slate-500 dark:text-slate-450 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Moon size={20} />
-              Mode Gelap (Dark)
+              Mode Gelap
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme('system')}
+              className={`p-4 rounded-xl font-bold text-xs border transition-all flex flex-col items-center gap-2 cursor-pointer ${
+                theme === 'system'
+                  ? 'bg-violet-600/10 border-violet-500/30 text-violet-600 dark:text-violet-400 shadow-md glow-brand'
+                  : 'bg-[var(--color-input)] border-[var(--color-border)] text-slate-500 dark:text-slate-455 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Monitor size={20} />
+              Sistem (HP)
             </button>
           </div>
         </div>

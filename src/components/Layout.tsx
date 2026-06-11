@@ -176,7 +176,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               key={item.path}
               to={item.path}
               className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 ${
-                active ? 'text-violet-600 dark:text-violet-400 scale-105 font-bold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
+                active ? 'text-violet-600 dark:text-violet-400 scale-105 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <Icon size={20} />
@@ -187,7 +187,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Toggle Mobile Menu for More Items */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 text-slate-450 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300 ${
+          className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 cursor-pointer ${
             mobileMenuOpen ? 'text-violet-600 dark:text-violet-400 font-bold' : ''
           }`}
         >
@@ -201,10 +201,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center">
           <div className="w-full glass-panel border-t border-[var(--color-border)] rounded-t-3xl p-6 space-y-4 max-h-[85vh] overflow-y-auto animate-slide-up">
             <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
-              <h3 className="font-bold text-slate-800 dark:text-slate-200">Menu Lainnya</h3>
+              <h3 className="font-bold text-slate-800 dark:text-white">Menu Lainnya</h3>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 cursor-pointer"
+                className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-white cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -221,11 +221,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-3 p-3.5 rounded-xl text-sm font-semibold border transition-all ${
                       active
-                        ? 'bg-violet-600/10 text-violet-600 dark:text-violet-300 border-violet-500/20'
-                        : 'bg-slate-200/50 dark:bg-slate-850/30 text-slate-500 dark:text-slate-400 border-slate-200/60 dark:border-slate-800/50 hover:bg-slate-300 dark:hover:bg-slate-800/60'
+                        ? 'bg-violet-600/20 text-violet-600 dark:text-white border-violet-500/30'
+                        : 'bg-slate-200/50 dark:bg-slate-800/40 text-slate-500 dark:text-white border-slate-200/60 dark:border-slate-800/50 hover:bg-slate-300 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    <Icon size={16} />
+                    <Icon size={16} className={active ? 'text-violet-600 dark:text-white' : 'text-slate-500 dark:text-white'} />
                     {item.name}
                   </Link>
                 );
@@ -233,8 +233,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
 
             <div className="border-t border-[var(--color-border)] pt-4 flex flex-col gap-3">
-              <div className="text-slate-500 dark:text-slate-400 text-xs truncate px-1 font-medium">
-                Akun: <strong className="text-slate-800 dark:text-slate-200">{displayName || user?.email}</strong>
+              <div className="text-slate-500 dark:text-slate-300 text-xs truncate px-1 font-medium">
+                Akun: <strong className="text-slate-800 dark:text-white">{displayName || user?.email}</strong>
               </div>
               <button
                 onClick={() => {

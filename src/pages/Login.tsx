@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, LogIn, UserPlus, Info } from 'lucide-react';
+import { Mail, Lock, LogIn, UserPlus } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { signIn, signUp, resetPassword } = useAuth();
@@ -66,19 +66,7 @@ export const Login: React.FC = () => {
     setLoading(false);
   };
 
-  const handleDemoLogin = async () => {
-    setError(null);
-    setSuccess(null);
-    setLoading(true);
-    const res = await signIn('admin@moneytrack.com', 'admin123');
-    if (res.error) {
-      setError(res.error);
-    } else {
-      setSuccess('Login Demo Berhasil! Mengalihkan...');
-      setTimeout(() => navigate('/'), 800);
-    }
-    setLoading(false);
-  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#0b0f19] relative overflow-hidden">
@@ -206,20 +194,7 @@ export const Login: React.FC = () => {
           </button>
         </form>
 
-        {/* Demo login option */}
-        {!isReset && !isSignUp && (
-          <div className="mt-5 pt-5 border-t border-slate-800/80">
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              disabled={loading}
-              className="w-full py-2.5 px-4 font-semibold text-xs rounded-xl text-slate-300 bg-slate-800/50 hover:bg-slate-800/80 border border-slate-800 transition-all flex items-center justify-center gap-2"
-            >
-              <Info size={14} className="text-violet-400" />
-              Gunakan Akun Demo (Instan)
-            </button>
-          </div>
-        )}
+
 
         <div className="mt-6 text-center">
           {isReset ? (
