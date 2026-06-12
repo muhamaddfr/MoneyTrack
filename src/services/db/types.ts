@@ -1,6 +1,8 @@
 export interface UserProfile {
   id: string;
   email: string;
+  email_verified?: boolean;
+  google_linked?: boolean;
 }
 
 export interface Wallet {

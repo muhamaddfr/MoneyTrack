@@ -3,10 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { dbService } from '../services/db';
-import { User, Sun, Moon, Info, Settings as SettingsIcon, Check, Monitor, Trash2, AlertTriangle } from 'lucide-react';
+import { User, Sun, Moon, Info, Settings as SettingsIcon, Check, Monitor, Trash2, AlertTriangle, Link2 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
-  const { user, displayName, updateProfileName, deleteAccount } = useAuth();
+  const { user, displayName, updateProfileName, deleteAccount, linkGoogle, unlinkGoogle } = useAuth();
   const { theme, setTheme } = useTheme();
   const { showToast } = useToast();
 
@@ -16,6 +16,29 @@ export const Settings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [linkingGoogle, setLinkingGoogle] = useState(false);
+
+  const handleLinkGoogle = async () => {
+    setLinkingGoogle(true);
+    const res = await linkGoogle();
+    setLinkingGoogle(false);
+    if (res.error) {
+      showToast(res.error, 'error');
+    } else {
+      showToast('Berhasil menautkan akun Google!', 'success');
+    }
+  };
+
+  const handleUnlinkGoogle = async () => {
+    setLinkingGoogle(true);
+    const res = await unlinkGoogle();
+    setLinkingGoogle(false);
+    if (res.error) {
+      showToast(res.error, 'error');
+    } else {
+      showToast('Koneksi akun Google berhasil diputuskan.', 'success');
+    }
+  };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +144,60 @@ export const Settings: React.FC = () => {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Connected Accounts Card */}
+      <div className="glass-panel rounded-2xl p-6 border border-[var(--color-border)] space-y-4">
+        <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center gap-2">
+          <Link2 size={16} className="text-violet-500 dark:text-violet-400" />
+          Koneksi Akun Sosial
+        </h3>
+
+        <div className="flex items-center justify-between p-4 bg-slate-200/30 dark:bg-slate-800/20 rounded-xl border border-[var(--color-border)]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-[var(--color-border)] flex items-center justify-center shadow-sm">
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69a5.74 5.74 0 0 1-2.49 3.77v3.12h4.02c2.34-2.16 3.69-5.35 3.69-8.74z" />
+                <path fill="#34A853" d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-4.02-3.12c-1.12.75-2.54 1.19-3.94 1.19-3.04 0-5.62-2.06-6.54-4.83H1.31v3.23A12 12 0 0 0 12 24z" />
+                <path fill="#FBBC05" d="M5.46 14.33a7.17 7.17 0 0 1 0-2.66V8.44H1.31a12 12 0 0 0 0 7.12l4.15-3.23z" />
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0 7.34 0 3.38 2.67 1.31 6.56l4.15 3.23c.92-2.77 3.5-4.83 6.54-4.83z" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200">Google Account</h4>
+              <p className="text-[10px] text-slate-550 dark:text-slate-400 mt-0.5">
+                {user?.google_linked ? 'Akun Google Anda terhubung.' : 'Hubungkan untuk mempermudah masuk aplikasi.'}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            {user?.google_linked ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline-flex px-2 py-0.5 text-[9px] font-bold rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  Terhubung
+                </span>
+                <button
+                  type="button"
+                  onClick={handleUnlinkGoogle}
+                  disabled={linkingGoogle}
+                  className="px-3 py-1.5 font-bold text-[10px] rounded-lg text-slate-500 dark:text-slate-450 bg-slate-200/50 dark:bg-slate-800/40 hover:bg-slate-300/50 dark:hover:bg-slate-700/50 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {linkingGoogle ? 'Memproses...' : 'Putuskan'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLinkGoogle}
+                disabled={linkingGoogle}
+                className="px-3.5 py-1.5 font-bold text-[10px] rounded-lg text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-md shadow-violet-600/10 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {linkingGoogle ? 'Memproses...' : 'Hubungkan'}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Theme Toggler Card */}

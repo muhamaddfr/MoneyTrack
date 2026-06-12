@@ -31,8 +31,13 @@ export class SupabaseDbService implements IDatabaseService {
     }
 
     if (data.user) {
+      const isGoogle = data.user.app_metadata?.provider === 'google';
       return {
-        user: { id: data.user.id, email: data.user.email || '' },
+        user: { 
+          id: data.user.id, 
+          email: data.user.email || '',
+          email_verified: !!data.user.email_confirmed_at || !!data.user.confirmed_at || isGoogle
+        },
         error: null,
       };
     }
@@ -51,8 +56,13 @@ export class SupabaseDbService implements IDatabaseService {
     }
 
     if (data.user) {
+      const isGoogle = data.user.app_metadata?.provider === 'google';
       return {
-        user: { id: data.user.id, email: data.user.email || '' },
+        user: { 
+          id: data.user.id, 
+          email: data.user.email || '',
+          email_verified: !!data.user.email_confirmed_at || !!data.user.confirmed_at || isGoogle
+        },
         error: null,
       };
     }
@@ -68,7 +78,14 @@ export class SupabaseDbService implements IDatabaseService {
   async getCurrentUser(): Promise<UserProfile | null> {
     const { data: { user } } = await this.supabase.auth.getUser();
     if (!user) return null;
-    return { id: user.id, email: user.email || '' };
+    const isGoogle = user.app_metadata?.provider === 'google';
+    const googleLinked = user.identities?.some(id => id.provider === 'google') || isGoogle;
+    return { 
+      id: user.id, 
+      email: user.email || '', 
+      email_verified: !!user.email_confirmed_at || !!user.confirmed_at || isGoogle,
+      google_linked: googleLinked
+    };
   }
 
   async resetPassword(email: string): Promise<{ error: string | null }> {
@@ -76,6 +93,35 @@ export class SupabaseDbService implements IDatabaseService {
       redirectTo: window.location.origin + '/reset-password',
     });
     return { error: error ? error.message : null };
+  }
+
+  async signInWithGoogle(): Promise<AuthResponse> {
+    const { error } = await this.supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    if (error) return { user: null, error: error.message };
+    return { user: null, error: null };
+  }
+
+  async verifyEmail(): Promise<{ error: string | null }> {
+    try {
+      const { data: { user }, error } = await this.supabase.auth.getUser();
+      if (error) throw error;
+      if (!user) return { error: 'Sesi tidak ditemukan.' };
+
+      const isGoogle = user.app_metadata?.provider === 'google';
+      const isConfirmed = !!user.email_confirmed_at || !!user.confirmed_at || isGoogle;
+      if (!isConfirmed) {
+        return { error: 'Email belum diverifikasi. Silakan cek kotak masuk email Anda.' };
+      }
+      return { error: null };
+    } catch (e) {
+      const err = e as Error;
+      return { error: err.message || 'Gagal memverifikasi email.' };
+    }
   }
 
   async deleteAccount(): Promise<{ error: string | null }> {
@@ -113,6 +159,35 @@ export class SupabaseDbService implements IDatabaseService {
     } catch (e) {
       const err = e as Error;
       return { error: err.message || 'Gagal menghapus akun.' };
+    }
+  }
+
+  async linkGoogle(): Promise<{ error: string | null }> {
+    const { error } = await this.supabase.auth.linkIdentity({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/settings'
+      }
+    });
+    return { error: error ? error.message : null };
+  }
+
+  async unlinkGoogle(): Promise<{ error: string | null }> {
+    try {
+      const { data: { user }, error } = await this.supabase.auth.getUser();
+      if (error) throw error;
+      if (!user) return { error: 'Sesi tidak ditemukan.' };
+
+      const googleIdentity = user.identities?.find(id => id.provider === 'google');
+      if (!googleIdentity) return { error: 'Google tidak terhubung.' };
+
+      const { error: unlinkError } = await this.supabase.auth.unlinkIdentity(googleIdentity);
+      if (unlinkError) throw unlinkError;
+
+      return { error: null };
+    } catch (e) {
+      const err = e as Error;
+      return { error: err.message || 'Gagal memutuskan hubungan Google.' };
     }
   }
 

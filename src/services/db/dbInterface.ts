@@ -15,6 +15,10 @@ export interface IDatabaseService {
   getCurrentUser(): Promise<UserProfile | null>;
   resetPassword(email: string): Promise<{ error: string | null }>;
   deleteAccount(): Promise<{ error: string | null }>;
+  signInWithGoogle(): Promise<AuthResponse>;
+  verifyEmail(): Promise<{ error: string | null }>;
+  linkGoogle(): Promise<{ error: string | null }>;
+  unlinkGoogle(): Promise<{ error: string | null }>;
 
   // Wallets
   getWallets(): Promise<Wallet[]>;

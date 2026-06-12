@@ -14,6 +14,10 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updateProfileName: (name: string) => Promise<{ error: string | null }>;
   deleteAccount: () => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
+  verifyEmail: () => Promise<{ error: string | null }>;
+  linkGoogle: () => Promise<{ error: string | null }>;
+  unlinkGoogle: () => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -139,8 +143,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return res;
   };
 
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    const res = await dbService.signInWithGoogle();
+    if (res.user) {
+      setUser(res.user);
+      await loadDisplayName(res.user);
+    }
+    setLoading(false);
+    return { error: res.error };
+  };
+
+  const verifyEmail = async () => {
+    const res = await dbService.verifyEmail();
+    if (!res.error && user) {
+      setUser({ ...user, email_verified: true });
+    }
+    return res;
+  };
+
+  const linkGoogle = async () => {
+    const res = await dbService.linkGoogle();
+    if (!res.error && user) {
+      setUser({ ...user, google_linked: true });
+    }
+    return res;
+  };
+
+  const unlinkGoogle = async () => {
+    const res = await dbService.unlinkGoogle();
+    if (!res.error && user) {
+      setUser({ ...user, google_linked: false });
+    }
+    return res;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, displayName, loading, signIn, signUp, signOut, resetPassword, updateProfileName, deleteAccount }}>
+    <AuthContext.Provider value={{ user, displayName, loading, signIn, signUp, signOut, resetPassword, updateProfileName, deleteAccount, signInWithGoogle, verifyEmail, linkGoogle, unlinkGoogle }}>
       {children}
     </AuthContext.Provider>
   );

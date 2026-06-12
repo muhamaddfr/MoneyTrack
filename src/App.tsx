@@ -14,6 +14,7 @@ import { Goals } from './pages/Goals';
 import { Categories } from './pages/Categories';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
+import { VerifyEmail } from './pages/VerifyEmail';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +35,7 @@ function App() {
             <Routes>
               {/* Public route */}
               <Route path="/login" element={<Login />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
 
               {/* Protected routes wrapped in Layout */}
               <Route

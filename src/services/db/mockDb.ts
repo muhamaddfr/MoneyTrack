@@ -3,6 +3,14 @@ import { UserProfile, Wallet, Category, Transaction, Budget, FinancialGoal } fro
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+interface MockUserRecord {
+  id: string;
+  email: string;
+  password?: string;
+  email_verified?: boolean;
+  google_linked?: boolean;
+}
+
 export class MockDbService implements IDatabaseService {
   provider: 'mock' | 'supabase' = 'mock';
 
@@ -186,17 +194,22 @@ export class MockDbService implements IDatabaseService {
   async signUp(email: string, password: string): Promise<AuthResponse> {
     await delay(500);
     const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
-    const users = JSON.parse(usersStr) as { email: string; password: string; id: string }[];
+    const users = JSON.parse(usersStr) as MockUserRecord[];
     
     if (users.find(u => u.email === email)) {
       return { user: null, error: 'Email sudah terdaftar!' };
     }
 
-    const newUser = { id: 'usr-' + Math.random().toString(36).substr(2, 9), email, password };
+    const newUser = { 
+      id: 'usr-' + Math.random().toString(36).substr(2, 9), 
+      email, 
+      password,
+      email_verified: false 
+    };
     users.push(newUser);
     localStorage.setItem('flowfin_registered_users', JSON.stringify(users));
 
-    const userProfile: UserProfile = { id: newUser.id, email: newUser.email };
+    const userProfile: UserProfile = { id: newUser.id, email: newUser.email, email_verified: false };
     localStorage.setItem('flowfin_current_user', JSON.stringify(userProfile));
     
     // Seed new data for this specific user if desired (uses their ID)
@@ -208,11 +221,11 @@ export class MockDbService implements IDatabaseService {
   async signIn(email: string, password: string): Promise<AuthResponse> {
     await delay(500);
     const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
-    const users = JSON.parse(usersStr) as { email: string; password: string; id: string }[];
+    const users = JSON.parse(usersStr) as MockUserRecord[];
     
     // Always allow default login for quick testing
     if (email === 'admin@flowfin.com' && password === 'admin123') {
-      const adminProfile = { id: 'default-user-id', email: 'admin@flowfin.com' };
+      const adminProfile: UserProfile = { id: 'default-user-id', email: 'admin@flowfin.com', email_verified: true };
       localStorage.setItem('flowfin_current_user', JSON.stringify(adminProfile));
       return { user: adminProfile, error: null };
     }
@@ -222,7 +235,11 @@ export class MockDbService implements IDatabaseService {
       return { user: null, error: 'Email atau password salah.' };
     }
 
-    const userProfile: UserProfile = { id: found.id, email: found.email };
+    const userProfile: UserProfile = { 
+      id: found.id, 
+      email: found.email, 
+      email_verified: found.email_verified || false 
+    };
     localStorage.setItem('flowfin_current_user', JSON.stringify(userProfile));
     return { user: userProfile, error: null };
   }
@@ -233,10 +250,118 @@ export class MockDbService implements IDatabaseService {
     return { error: null };
   }
 
+  async signInWithGoogle(): Promise<AuthResponse> {
+    await delay(600);
+    const email = 'google.tester@flowfin.com';
+    const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
+    const users = JSON.parse(usersStr) as MockUserRecord[];
+    
+    let found = users.find(u => u.email === email);
+    if (!found) {
+      found = { 
+        id: 'usr-google-' + Math.random().toString(36).substr(2, 9), 
+        email, 
+        password: 'google-oauth-simulated', 
+        email_verified: true,
+        google_linked: true
+      };
+      users.push(found);
+      localStorage.setItem('flowfin_registered_users', JSON.stringify(users));
+      localStorage.setItem(`flowfin_profile_name_${found.id}`, 'Google Tester');
+    }
+
+    const userProfile: UserProfile = { 
+      id: found.id, 
+      email: found.email, 
+      email_verified: true,
+      google_linked: true
+    };
+    localStorage.setItem('flowfin_current_user', JSON.stringify(userProfile));
+    return { user: userProfile, error: null };
+  }
+
+  async verifyEmail(): Promise<{ error: string | null }> {
+    await delay(300);
+    const userStr = localStorage.getItem('flowfin_current_user');
+    if (!userStr) return { error: 'Sesi tidak ditemukan.' };
+    
+    try {
+      const user = JSON.parse(userStr) as UserProfile;
+      user.email_verified = true;
+      localStorage.setItem('flowfin_current_user', JSON.stringify(user));
+
+      // Update in registered users
+      const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
+      const users = JSON.parse(usersStr) as MockUserRecord[];
+      const updated = users.map(u => u.id === user.id ? { ...u, email_verified: true } : u);
+      localStorage.setItem('flowfin_registered_users', JSON.stringify(updated));
+
+      return { error: null };
+    } catch {
+      return { error: 'Gagal memverifikasi email.' };
+    }
+  }
+
+  async linkGoogle(): Promise<{ error: string | null }> {
+    await delay(400);
+    const userStr = localStorage.getItem('flowfin_current_user');
+    if (!userStr) return { error: 'Sesi tidak ditemukan.' };
+
+    try {
+      const user = JSON.parse(userStr) as UserProfile;
+      user.google_linked = true;
+      localStorage.setItem('flowfin_current_user', JSON.stringify(user));
+
+      // Update in registered users
+      const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
+      const users = JSON.parse(usersStr) as MockUserRecord[];
+      const updated = users.map(u => u.id === user.id ? { ...u, google_linked: true } : u);
+      localStorage.setItem('flowfin_registered_users', JSON.stringify(updated));
+
+      return { error: null };
+    } catch {
+      return { error: 'Gagal menautkan Google.' };
+    }
+  }
+
+  async unlinkGoogle(): Promise<{ error: string | null }> {
+    await delay(400);
+    const userStr = localStorage.getItem('flowfin_current_user');
+    if (!userStr) return { error: 'Sesi tidak ditemukan.' };
+
+    try {
+      const user = JSON.parse(userStr) as UserProfile;
+      user.google_linked = false;
+      localStorage.setItem('flowfin_current_user', JSON.stringify(user));
+
+      // Update in registered users
+      const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
+      const users = JSON.parse(usersStr) as MockUserRecord[];
+      const updated = users.map(u => u.id === user.id ? { ...u, google_linked: false } : u);
+      localStorage.setItem('flowfin_registered_users', JSON.stringify(updated));
+
+      return { error: null };
+    } catch {
+      return { error: 'Gagal memutuskan Google.' };
+    }
+  }
+
   async getCurrentUser(): Promise<UserProfile | null> {
     const userStr = localStorage.getItem('flowfin_current_user');
     if (!userStr) return null;
-    return JSON.parse(userStr) as UserProfile;
+    try {
+      const user = JSON.parse(userStr) as UserProfile;
+      // Sync status google_linked dari daftar user terdaftar
+      const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
+      const users = JSON.parse(usersStr) as MockUserRecord[];
+      const found = users.find(u => u.id === user.id);
+      if (found) {
+        user.google_linked = found.google_linked || false;
+      }
+      return user;
+    } catch {
+      return null;
+    }
   }
 
   async resetPassword(email: string): Promise<{ error: string | null }> {
