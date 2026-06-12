@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+import { Mail, Lock, LogIn, UserPlus, Check } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { signIn, signUp, resetPassword, user } = useAuth();
@@ -267,6 +267,21 @@ export const Login: React.FC = () => {
                     placeholder="••••••••"
                   />
                 </div>
+                {confirmPassword && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold">
+                    {password === confirmPassword ? (
+                      <span className="text-emerald-600 dark:text-emerald-450 flex items-center gap-1">
+                        <Check size={12} className="shrink-0" />
+                        Kata sandi cocok
+                      </span>
+                    ) : (
+                      <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                        <span className="shrink-0">✕</span>
+                        Kata sandi tidak cocok
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* CAPTCHA Section */}

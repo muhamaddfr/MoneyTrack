@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { dbService } from '../services/db';
 import { UserProfile } from '../services/db/types';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../services/db/supabaseClient';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -65,11 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    if (dbService.provider === 'supabase') {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
+    if (dbService.provider === 'supabase' && supabase) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user) {
           const isGoogle = session.user.app_metadata?.provider === 'google';
@@ -145,11 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return { error: 'User tidak ditemukan.' };
 
     try {
-      if (dbService.provider === 'supabase') {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
-        
+      if (dbService.provider === 'supabase' && supabase) {
         const { error } = await supabase.auth.updateUser({
           data: { display_name: newName }
         });

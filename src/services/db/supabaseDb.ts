@@ -1,15 +1,14 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from './supabaseClient';
 import { IDatabaseService, AuthResponse } from './dbInterface';
 import { UserProfile, Wallet, Category, Transaction, Budget, FinancialGoal } from './types';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export class SupabaseDbService implements IDatabaseService {
   provider: 'mock' | 'supabase' = 'supabase';
-  private supabase: SupabaseClient;
+  public supabase: SupabaseClient;
 
   constructor() {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-    this.supabase = createClient(supabaseUrl, supabaseAnonKey);
+    this.supabase = supabase!;
   }
 
   // Helper to get active user ID
@@ -109,8 +108,15 @@ export class SupabaseDbService implements IDatabaseService {
   async verifyEmail(): Promise<{ error: string | null }> {
     try {
       const { data: { user }, error } = await this.supabase.auth.getUser();
-      if (error) throw error;
-      if (!user) return { error: 'Sesi tidak ditemukan.' };
+      if (error) {
+        if (error.message?.toLowerCase().includes('session')) {
+          return { error: 'Sesi tidak ditemukan atau kedaluwarsa. Silakan masuk (login) kembali setelah mengonfirmasi email Anda.' };
+        }
+        throw error;
+      }
+      if (!user) {
+        return { error: 'Sesi tidak ditemukan atau kedaluwarsa. Silakan masuk (login) kembali.' };
+      }
 
       const isGoogle = user.app_metadata?.provider === 'google';
       const isConfirmed = !!user.email_confirmed_at || !!user.confirmed_at || isGoogle;
@@ -120,6 +126,9 @@ export class SupabaseDbService implements IDatabaseService {
       return { error: null };
     } catch (e) {
       const err = e as Error;
+      if (err.message?.toLowerCase().includes('session')) {
+        return { error: 'Sesi tidak ditemukan atau kedaluwarsa. Silakan masuk (login) kembali setelah mengonfirmasi email Anda.' };
+      }
       return { error: err.message || 'Gagal memverifikasi email.' };
     }
   }

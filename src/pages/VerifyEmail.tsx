@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Mail, RefreshCw, LogOut, ShieldAlert } from 'lucide-react';
 import { dbService } from '../services/db';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../services/db/supabaseClient';
 
 export const VerifyEmail: React.FC = () => {
   const { user, verifyEmail, signOut } = useAuth();
@@ -41,10 +41,7 @@ export const VerifyEmail: React.FC = () => {
     setResending(true);
 
     try {
-      if (dbService.provider === 'supabase') {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      if (dbService.provider === 'supabase' && supabase) {
         
         const { error } = await supabase.auth.resend({
           type: 'signup',
