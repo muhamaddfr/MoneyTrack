@@ -28,22 +28,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   // Helper to load display name based on user
-  const loadDisplayName = async (currentUser: UserProfile | null) => {
+  const loadDisplayName = async (currentUser: UserProfile | null, customDisplayName?: string) => {
     if (!currentUser) {
       setDisplayName('');
       return;
     }
 
-    if (dbService.provider === 'supabase') {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
-      const { data: { user: sbUser } } = await supabase.auth.getUser();
-      
-      if (sbUser?.user_metadata?.display_name) {
-        setDisplayName(sbUser.user_metadata.display_name);
-        return;
-      }
+    if (customDisplayName) {
+      setDisplayName(customDisplayName);
+      return;
     }
 
     // Fallback to localStorage for mock database or missing metadata
@@ -88,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             google_linked: googleLinked
           };
           setUser(profile);
-          await loadDisplayName(profile);
+          await loadDisplayName(profile, session.user.user_metadata?.display_name);
 
           // Clear hash parameters if they are oauth tokens
           if (window.location.hash && window.location.hash.includes('access_token=')) {
