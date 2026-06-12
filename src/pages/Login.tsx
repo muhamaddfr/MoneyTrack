@@ -69,20 +69,20 @@ export const Login: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0b0f19] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-bg)] text-[var(--color-text-primary)] transition-colors duration-300 relative overflow-hidden">
       {/* Dynamic Background Blur Accents */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="w-full max-w-md glass-panel rounded-3xl p-8 shadow-2xl relative z-10 animate-fade-in border border-slate-800">
+      <div className="w-full max-w-md glass-panel rounded-3xl p-8 shadow-2xl relative z-10 animate-fade-in">
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg glow-brand mb-4">
-            <img src="/pwa-192x192.png" alt="MoneyTrack Logo" className="w-12 h-12" />
+            <img src="/pwa-192x192.png" alt="FlowFin Logo" className="w-12 h-12" />
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-violet-400 to-indigo-300 bg-clip-text text-transparent">
-            MoneyTrack
+          <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-500 dark:from-violet-400 dark:to-indigo-300 bg-clip-text text-transparent">
+            FlowFin
           </h2>
-          <p className="text-slate-400 text-sm mt-1 text-center">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 text-center">
             {isReset 
               ? 'Lupa Password Anda?' 
               : isSignUp 
@@ -105,7 +105,7 @@ export const Login: React.FC = () => {
 
         <form onSubmit={handleAuth} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
               Alamat Email
             </label>
             <div className="relative">
@@ -115,7 +115,7 @@ export const Login: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#151b2c] border border-slate-800 focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-slate-100 placeholder-slate-500 text-sm transition-all"
+                className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
                 placeholder="nama@email.com"
               />
             </div>
@@ -123,7 +123,7 @@ export const Login: React.FC = () => {
 
           {!isReset && (
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
                 Password
               </label>
               <div className="relative">
@@ -133,7 +133,7 @@ export const Login: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#151b2c] border border-slate-800 focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-slate-100 placeholder-slate-500 text-sm transition-all"
+                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -142,7 +142,7 @@ export const Login: React.FC = () => {
 
           {isSignUp && !isReset && (
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
                 Konfirmasi Password
               </label>
               <div className="relative">
@@ -152,7 +152,7 @@ export const Login: React.FC = () => {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-[#151b2c] border border-slate-800 focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-slate-100 placeholder-slate-500 text-sm transition-all"
+                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -164,7 +164,7 @@ export const Login: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsReset(true)}
-                className="text-xs text-violet-400 hover:text-violet-300 font-medium transition-all"
+                className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 font-medium transition-all"
               >
                 Lupa Password?
               </button>
@@ -204,7 +204,7 @@ export const Login: React.FC = () => {
                 setError(null);
                 setSuccess(null);
               }}
-              className="text-xs text-slate-400 hover:text-slate-200 transition-all"
+              className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium transition-all cursor-pointer"
             >
               Kembali ke Halaman Login
             </button>
@@ -215,15 +215,15 @@ export const Login: React.FC = () => {
                 setError(null);
                 setSuccess(null);
               }}
-              className="text-xs text-slate-400 hover:text-slate-200 transition-all"
+              className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200 font-medium transition-all cursor-pointer"
             >
               {isSignUp ? (
                 <span>
-                  Sudah punya akun? <strong className="text-violet-400 hover:underline">Masuk disini</strong>
+                  Sudah punya akun? <strong className="text-violet-600 dark:text-violet-400 hover:underline">Masuk disini</strong>
                 </span>
               ) : (
                 <span>
-                  Belum punya akun? <strong className="text-violet-400 hover:underline">Daftar sekarang</strong>
+                  Belum punya akun? <strong className="text-violet-600 dark:text-violet-400 hover:underline">Daftar sekarang</strong>
                 </span>
               )}
             </button>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dbService } from '../services/db';
+import { useToast } from '../context/ToastContext';
 import { Transaction, TransactionType } from '../services/db/types';
 import {
   Plus,
@@ -18,6 +19,7 @@ import {
 
 export const Transactions: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Queries
   const { data: transactions = [], isLoading: txsLoading } = useQuery({
@@ -62,7 +64,11 @@ export const Transactions: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      showToast('Transaksi berhasil ditambahkan!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menambahkan transaksi', 'error');
     }
   });
 
@@ -72,7 +78,11 @@ export const Transactions: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      showToast('Transaksi berhasil diperbarui!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal memperbarui transaksi', 'error');
     }
   });
 
@@ -81,6 +91,10 @@ export const Transactions: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      showToast('Transaksi berhasil dihapus!', 'success');
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menghapus transaksi', 'error');
     }
   });
 

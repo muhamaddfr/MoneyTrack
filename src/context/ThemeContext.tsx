@@ -14,7 +14,11 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('moneytrack_theme');
+    const oldSaved = localStorage.getItem('moneytrack_theme');
+    if (oldSaved && !localStorage.getItem('flowfin_theme')) {
+      localStorage.setItem('flowfin_theme', oldSaved);
+    }
+    const saved = localStorage.getItem('flowfin_theme');
     if (saved === 'light' || saved === 'dark' || saved === 'system') return saved as Theme;
     // Default to system to match phone preferences out of the box
     return 'system';
@@ -43,7 +47,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     updateTheme();
-    localStorage.setItem('moneytrack_theme', theme);
+    localStorage.setItem('flowfin_theme', theme);
 
     if (theme === 'system') {
       mediaQuery.addEventListener('change', updateTheme);

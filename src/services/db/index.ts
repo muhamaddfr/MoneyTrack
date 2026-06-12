@@ -11,4 +11,4 @@ export const dbService: IDatabaseService = hasSupabaseKeys
   ? new SupabaseDbService()
   : new MockDbService();
 
-console.log(`[MoneyTrack] Active database provider: ${dbService.provider.toUpperCase()}`);
+console.log(`[FlowFin] Active database provider: ${dbService.provider.toUpperCase()}`);

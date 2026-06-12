@@ -85,7 +85,7 @@ export const Reports: React.FC = () => {
 
     // 1. Summary Sheet Data
     const summaryData = [
-      ['LAPORAN KEUANGAN MONEYTRACK'],
+      ['LAPORAN KEUANGAN FLOWFIN'],
       ['Jenis Laporan', reportType.toUpperCase()],
       ['Periode', periodLabel],
       [],
@@ -114,7 +114,7 @@ export const Reports: React.FC = () => {
     XLSX.utils.book_append_sheet(wb, ws, 'Laporan Keuangan');
 
     // Download
-    XLSX.writeFile(wb, `MoneyTrack_Laporan_${reportType}_${periodLabel}.xlsx`);
+    XLSX.writeFile(wb, `FlowFin_Laporan_${reportType}_${periodLabel}.xlsx`);
   };
 
   // PDF Exporter
@@ -126,77 +126,151 @@ export const Reports: React.FC = () => {
         ? selectedMonth 
         : selectedYear;
 
-    // Title & Metadata
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.setTextColor(15, 23, 42); // slate-900
-    doc.text('MoneyTrack Report', 14, 20);
+    // Helper to generate formal period heading in Indonesian
+    const getPeriodHeading = () => {
+      if (reportType === 'daily') {
+        // e.g. "2026-06-12" -> "12 Juni 2026"
+        const parts = periodLabel.split('-');
+        if (parts.length === 3) {
+          const day = parseInt(parts[2], 10);
+          const year = parts[0];
+          const monthNum = parseInt(parts[1], 10);
+          const monthNames = [
+            'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
+            'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+          ];
+          const monthName = monthNames[monthNum - 1] || parts[1];
+          return `LAPORAN TRANSAKSI HARIAN\nTANGGAL: ${day} ${monthName} ${year}`;
+        }
+        return `LAPORAN TRANSAKSI HARIAN\nPERIODE: ${periodLabel}`;
+      } else if (reportType === 'monthly') {
+        // e.g. "2026-06"
+        const parts = periodLabel.split('-');
+        if (parts.length === 2) {
+          const year = parts[0];
+          const monthNum = parseInt(parts[1], 10);
+          const monthNames = [
+            'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
+            'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+          ];
+          const monthName = monthNames[monthNum - 1] || parts[1].toUpperCase();
+          return `LAPORAN TRANSAKSI BULANAN\nBULAN: ${monthName} ${year}`;
+        }
+        return `LAPORAN TRANSAKSI BULANAN\nPERIODE: ${periodLabel.toUpperCase()}`;
+      } else {
+        return `LAPORAN TRANSAKSI TAHUNAN\nTAHUN: ${periodLabel}`;
+      }
+    };
 
-    doc.setFontSize(10);
-    doc.setFont('Helvetica', 'normal');
-    doc.setTextColor(100, 116, 139); // slate-500
-    doc.text(`Tipe Laporan: ${reportType.toUpperCase()}`, 14, 28);
-    doc.text(`Periode: ${periodLabel}`, 14, 33);
-    doc.text(`Dicetak Pada: ${new Date().toLocaleString('id-ID')}`, 14, 38);
-
-    // Summary Card Grid
-    doc.setDrawColor(226, 232, 240); // slate-200
-    doc.setFillColor(248, 250, 252); // slate-50
-    doc.roundedRect(14, 45, 182, 35, 3, 3, 'FD');
-
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(71, 85, 105); // slate-600
-    doc.text('RINGKASAN LAPORAN', 20, 52);
-
-    doc.setFontSize(9);
-    doc.setFont('Helvetica', 'normal');
-    doc.text(`Total Pemasukan:`, 20, 60);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(16, 185, 129); // emerald-500
-    doc.text(formatIDR(totalIncome), 60, 60);
-
-    doc.setFont('Helvetica', 'normal');
-    doc.setTextColor(71, 85, 105);
-    doc.text(`Total Pengeluaran:`, 20, 66);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(244, 63, 94); // rose-500
-    doc.text(formatIDR(totalExpense), 60, 66);
-
-    doc.setFont('Helvetica', 'normal');
-    doc.setTextColor(71, 85, 105);
-    doc.text(`Net Cashflow (Selisih):`, 20, 72);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(netCashflow >= 0 ? 16 : 244, netCashflow >= 0 ? 185 : 63, netCashflow >= 0 ? 129 : 94);
-    doc.text(formatIDR(netCashflow), 60, 72);
-
-    doc.setFont('Helvetica', 'normal');
-    doc.setTextColor(71, 85, 105);
-    doc.text(`Kategori Terbesar:`, 115, 60);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(15, 23, 42);
-    doc.text(`${topCategory.name} (${formatIDR(topCategory.amount)})`, 147, 60);
-
-    // Table Header
-    doc.setFontSize(12);
-    doc.setTextColor(15, 23, 42);
-    doc.text('Daftar Transaksi', 14, 92);
-
-    doc.setFontSize(9);
-    doc.setFillColor(15, 23, 42);
-    doc.rect(14, 97, 182, 8, 'F');
+    // 1. Formal Letterhead Header
+    // Logo Icon Emblem (Vector rounded rectangle + white 'F')
+    doc.setFillColor(99, 102, 241); // indigo-500 (#6366f1)
+    doc.roundedRect(14, 12, 11, 11, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('Helvetica', 'bold');
-    doc.text('Tanggal', 17, 102);
-    doc.text('Keterangan', 45, 102);
-    doc.text('Kategori', 105, 102);
-    doc.text('Wallet', 145, 102);
-    doc.text('Nominal', 175, 102);
+    doc.setFontSize(9);
+    doc.text('F', 18, 20);
+
+    // FlowFin Title
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text('FlowFin Report', 29, 17);
+
+    // Business Address / Subtitle details
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139); // slate-500
+    doc.text('Gedung FlowFin Lt. 4, Jl. H. R. Rasuna Said Blok X-5, Jakarta Selatan', 29, 21.5);
+    doc.text('Email: support@flowfin.com  |  Telp: (021) 555-0199  |  Website: www.flowfin.com', 29, 25.5);
+
+    // Header Separator Line
+    doc.setDrawColor(203, 213, 225); // slate-300
+    doc.setLineWidth(0.4);
+    doc.line(14, 29, 196, 29);
+
+    // Metadata: Printed Date
+    doc.setFontSize(7);
+    doc.setFont('Helvetica', 'normal');
+    doc.setTextColor(148, 163, 184); // slate-400
+    doc.text(`Dicetak Pada: ${new Date().toLocaleString('id-ID')}`, 148, 34);
+
+    // 2. Summary Card Grid (Shifted up slightly)
+    doc.setDrawColor(226, 232, 240); // slate-200
+    doc.setFillColor(248, 250, 252); // slate-50
+    doc.roundedRect(14, 37, 182, 28, 2, 2, 'FD');
+
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(71, 85, 105); // slate-600
+    doc.text('RINGKASAN LAPORAN', 20, 43);
+
+    doc.setFontSize(8.5);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Total Pemasukan:`, 20, 50);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(16, 185, 129); // emerald-500
+    doc.text(formatIDR(totalIncome), 60, 50);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Total Pengeluaran:`, 20, 56);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(244, 63, 94); // rose-500
+    doc.text(formatIDR(totalExpense), 60, 56);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Net Cashflow (Selisih):`, 20, 62);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(netCashflow >= 0 ? 16 : 244, netCashflow >= 0 ? 185 : 63, netCashflow >= 0 ? 129 : 94);
+    doc.text(formatIDR(netCashflow), 60, 62);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Kategori Terbesar:`, 115, 50);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text(`${topCategory.name} (${formatIDR(topCategory.amount)})`, 146, 50);
+
+    // 3. Centered Heading (LAPORAN BULANAN - JUNI 2026 etc.)
+    const headingText = getPeriodHeading();
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42); // slate-900
+    
+    // Split and center heading lines
+    const lines = headingText.split('\n');
+    lines.forEach((line, index) => {
+      const textWidth = doc.getTextWidth(line);
+      const x = (210 - textWidth) / 2;
+      doc.text(line, x, 76 + (index * 5.5));
+    });
+
+    // Separator line under heading
+    doc.setDrawColor(241, 245, 249); // slate-100
+    doc.line(14, 88, 196, 88);
+
+    // 4. Transaction List Table
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Daftar Transaksi', 14, 94);
+
+    doc.setFontSize(8.5);
+    doc.setFillColor(15, 23, 42); // slate-900 table header bg
+    doc.rect(14, 98, 182, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('Helvetica', 'bold');
+    doc.text('Tanggal', 17, 103);
+    doc.text('Keterangan', 45, 103);
+    doc.text('Kategori', 105, 103);
+    doc.text('Wallet', 145, 103);
+    doc.text('Nominal', 175, 103);
 
     // Table Rows
     doc.setFont('Helvetica', 'normal');
     doc.setTextColor(71, 85, 105);
-    let y = 110;
+    let y = 111;
     
     filteredTxs.forEach((t, i) => {
       // Draw background stripe
@@ -236,7 +310,7 @@ export const Reports: React.FC = () => {
     });
 
     // Save
-    doc.save(`MoneyTrack_Laporan_${reportType}_${periodLabel}.pdf`);
+    doc.save(`FlowFin_Laporan_${reportType}_${periodLabel}.pdf`);
   };
 
   const formatIDR = (num: number) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { dbService } from '../services/db';
@@ -21,12 +21,57 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => void;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, displayName, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  useEffect(() => {
+    const isStandalone = () => {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             ('standalone' in navigator && (navigator as Navigator & { standalone?: boolean }).standalone);
+    };
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      if (isStandalone()) return;
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      
+      const dismissed = sessionStorage.getItem('flowfin_install_dismissed');
+      if (!dismissed) {
+        setShowInstallBanner(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`PWA install prompt choice: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowInstallBanner(false);
+  };
+
+  const handleDismissClick = () => {
+    sessionStorage.setItem('flowfin_install_dismissed', 'true');
+    setShowInstallBanner(false);
+  };
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -52,13 +97,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-bg)] text-[var(--color-text-primary)] transition-colors duration-300">
+    <div className="h-screen overflow-hidden flex flex-col bg-[var(--color-bg)] text-[var(--color-text-primary)] transition-colors duration-300">
       {/* Top Header */}
-      <header className="sticky top-0 z-45 flex items-center justify-between px-6 py-4 glass-panel border-b border-[var(--color-border)]">
+      <header className="relative z-45 flex items-center justify-between px-6 py-4 glass-panel border-b border-[var(--color-border)] shrink-0">
         <div className="flex items-center gap-3">
-          <img src="/pwa-192x192.png" alt="MoneyTrack" className="w-8 h-8 rounded-lg glow-brand" />
+          <img src="/pwa-192x192.png" alt="FlowFin" className="w-8 h-8 rounded-lg glow-brand" />
           <h1 className="text-xl font-extrabold tracking-wider bg-gradient-to-r from-violet-600 to-indigo-500 dark:from-violet-400 dark:to-indigo-300 bg-clip-text text-transparent">
-            MoneyTrack
+            FlowFin
           </h1>
         </div>
 
@@ -119,7 +164,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <button
                     onClick={() => {
                       setProfileDropdownOpen(false);
-                      handleSignOut();
+                      setShowLogoutConfirm(true);
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-500/10 transition-all cursor-pointer"
                   >
@@ -133,9 +178,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </header>
 
-      <div className="flex flex-1 relative">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Desktop Sidebar */}
-        <aside className="hidden md:flex flex-col w-64 glass-panel border-r border-[var(--color-border)] p-4 shrink-0">
+        <aside className="hidden md:flex flex-col w-64 glass-panel border-r border-[var(--color-border)] p-4 shrink-0 overflow-y-auto">
           <nav className="flex-1 space-y-1.5">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -156,6 +201,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               );
             })}
           </nav>
+          
+          {/* App Version Info */}
+          <div className="mt-6 pt-4 border-t border-[var(--color-border)]/60 text-center">
+            <span className="text-[10px] font-extrabold tracking-widest text-slate-400 dark:text-slate-500 block uppercase">
+              V1.0 FLOWFIN
+            </span>
+          </div>
         </aside>
 
         {/* Main Content Area */}
@@ -239,7 +291,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  handleSignOut();
+                  setShowLogoutConfirm(true);
                 }}
                 className="w-full flex items-center justify-center gap-2 p-3 text-sm font-bold bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl hover:bg-rose-500/20 transition-all cursor-pointer"
               >
@@ -247,6 +299,67 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 Keluar dari Akun
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-sm glass-panel rounded-2xl p-6 space-y-4 border border-[var(--color-border)] animate-slide-up bg-[var(--color-card)]">
+            <h3 className="font-bold text-slate-800 dark:text-white text-lg">Konfirmasi Keluar</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed">
+              Apakah Anda yakin ingin keluar dari akun FlowFin Anda? Data Anda akan tetap aman tersimpan.
+            </p>
+            
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-850 transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  handleSignOut();
+                }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 transition-all shadow-md cursor-pointer"
+              >
+                Ya, Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PWA Install Banner */}
+      {showInstallBanner && deferredPrompt && (
+        <div className="fixed top-20 left-4 right-4 md:left-auto md:right-4 md:w-96 z-49 glass-panel rounded-2xl p-4 border border-violet-500/20 shadow-2xl animate-fade-in bg-[var(--color-card)] pointer-events-auto">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow-md shrink-0">
+              <img src="/pwa-192x192.png" alt="FlowFin" className="w-7 h-7" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <h4 className="font-bold text-xs text-slate-800 dark:text-white">Pasang Aplikasi FlowFin</h4>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
+                Instal FlowFin di HP Anda untuk akses instan, penggunaan offline, dan performa yang lebih lancar!
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2.5 pt-3">
+            <button
+              onClick={handleDismissClick}
+              className="px-3.5 py-1.5 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-850 transition-all cursor-pointer"
+            >
+              Nanti Saja
+            </button>
+            <button
+              onClick={handleInstallClick}
+              className="px-3.5 py-1.5 rounded-lg text-[10px] font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-md transition-all cursor-pointer"
+            >
+              Instal Sekarang
+            </button>
           </div>
         </div>
       )}

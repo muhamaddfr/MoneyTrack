@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dbService } from '../services/db';
+import { useToast } from '../context/ToastContext';
 import { FinancialGoal } from '../services/db/types';
 import { Plus, Edit2, Trash2, X, Target, PiggyBank, Calendar, Coins } from 'lucide-react';
 
 export const Goals: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Queries
   const { data: goals = [], isLoading } = useQuery({
@@ -33,7 +35,11 @@ export const Goals: React.FC = () => {
       dbService.addFinancialGoal(newGoal.title, newGoal.target_amount, newGoal.current_amount, newGoal.target_date),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['financial_goals'] });
+      showToast('Saving Goal berhasil ditambahkan!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menambahkan goal', 'error');
     }
   });
 
@@ -42,7 +48,11 @@ export const Goals: React.FC = () => {
       dbService.updateFinancialGoal(id, data.title, data.target_amount, data.current_amount, data.target_date),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['financial_goals'] });
+      showToast('Saving Goal berhasil diperbarui!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal memperbarui goal', 'error');
     }
   });
 
@@ -51,7 +61,11 @@ export const Goals: React.FC = () => {
       dbService.addGoalFunds(id, amount),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['financial_goals'] });
+      showToast('Dana berhasil disimpan ke target!', 'success');
       closeFundsModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menyimpan dana', 'error');
     }
   });
 
@@ -59,6 +73,10 @@ export const Goals: React.FC = () => {
     mutationFn: (id: string) => dbService.deleteFinancialGoal(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['financial_goals'] });
+      showToast('Saving Goal berhasil dihapus!', 'success');
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menghapus goal', 'error');
     }
   });
 

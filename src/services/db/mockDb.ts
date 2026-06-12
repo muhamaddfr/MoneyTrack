@@ -7,7 +7,7 @@ export class MockDbService implements IDatabaseService {
   provider: 'mock' | 'supabase' = 'mock';
 
   private getActiveUserId(): string {
-    const userStr = localStorage.getItem('moneytrack_current_user');
+    const userStr = localStorage.getItem('flowfin_current_user');
     if (userStr) {
       try {
         const user = JSON.parse(userStr) as UserProfile;
@@ -20,14 +20,27 @@ export class MockDbService implements IDatabaseService {
   }
 
   constructor() {
+    this.migrateKeys();
     this.seedInitialData();
+  }
+
+  private migrateKeys() {
+    const keys = ['categories', 'wallets', 'transactions', 'budgets', 'goals', 'registered_users', 'current_user'];
+    keys.forEach(key => {
+      const oldKey = `moneytrack_${key}`;
+      const newKey = `flowfin_${key}`;
+      const oldVal = localStorage.getItem(oldKey);
+      if (oldVal && !localStorage.getItem(newKey)) {
+        localStorage.setItem(newKey, oldVal);
+      }
+    });
   }
 
   private seedInitialData() {
     const userId = 'default-user-id';
     
     // Seed Categories
-    if (!localStorage.getItem('moneytrack_categories')) {
+    if (!localStorage.getItem('flowfin_categories')) {
       const defaultCategories: Category[] = [
         { id: 'cat-1', user_id: userId, name: 'Gaji', type: 'income' },
         { id: 'cat-2', user_id: userId, name: 'Freelance', type: 'income' },
@@ -38,21 +51,21 @@ export class MockDbService implements IDatabaseService {
         { id: 'cat-7', user_id: userId, name: 'Hiburan', type: 'expense' },
         { id: 'cat-8', user_id: userId, name: 'Investasi', type: 'income' },
       ];
-      localStorage.setItem('moneytrack_categories', JSON.stringify(defaultCategories));
+      localStorage.setItem('flowfin_categories', JSON.stringify(defaultCategories));
     }
 
     // Seed Wallets
-    if (!localStorage.getItem('moneytrack_wallets')) {
+    if (!localStorage.getItem('flowfin_wallets')) {
       const defaultWallets: Wallet[] = [
         { id: 'wal-1', user_id: userId, name: 'Tunai', balance: 1200000 },
         { id: 'wal-2', user_id: userId, name: 'BCA', balance: 8500000 },
         { id: 'wal-3', user_id: userId, name: 'OVO', balance: 350000 },
       ];
-      localStorage.setItem('moneytrack_wallets', JSON.stringify(defaultWallets));
+      localStorage.setItem('flowfin_wallets', JSON.stringify(defaultWallets));
     }
 
     // Seed Transactions
-    if (!localStorage.getItem('moneytrack_transactions')) {
+    if (!localStorage.getItem('flowfin_transactions')) {
       const now = new Date();
       const formatOffsetDate = (daysAgo: number) => {
         const d = new Date();
@@ -132,21 +145,21 @@ export class MockDbService implements IDatabaseService {
           transaction_date: formatOffsetDate(0),
         },
       ];
-      localStorage.setItem('moneytrack_transactions', JSON.stringify(defaultTransactions));
+      localStorage.setItem('flowfin_transactions', JSON.stringify(defaultTransactions));
     }
 
     // Seed Budgets
-    if (!localStorage.getItem('moneytrack_budgets')) {
+    if (!localStorage.getItem('flowfin_budgets')) {
       const defaultBudgets: Budget[] = [
         { id: 'bud-1', user_id: userId, category_id: 'cat-3', limit_amount: 1500000, period: new Date().toISOString().slice(0, 7) },
         { id: 'bud-2', user_id: userId, category_id: 'cat-4', limit_amount: 500000, period: new Date().toISOString().slice(0, 7) },
         { id: 'bud-3', user_id: userId, category_id: 'cat-5', limit_amount: 1000000, period: new Date().toISOString().slice(0, 7) },
       ];
-      localStorage.setItem('moneytrack_budgets', JSON.stringify(defaultBudgets));
+      localStorage.setItem('flowfin_budgets', JSON.stringify(defaultBudgets));
     }
 
     // Seed Financial Goals
-    if (!localStorage.getItem('moneytrack_goals')) {
+    if (!localStorage.getItem('flowfin_goals')) {
       const defaultGoals: FinancialGoal[] = [
         {
           id: 'goal-1',
@@ -165,14 +178,14 @@ export class MockDbService implements IDatabaseService {
           target_date: '2026-09-30',
         },
       ];
-      localStorage.setItem('moneytrack_goals', JSON.stringify(defaultGoals));
+      localStorage.setItem('flowfin_goals', JSON.stringify(defaultGoals));
     }
   }
 
   // --- Authentication ---
   async signUp(email: string, password: string): Promise<AuthResponse> {
     await delay(500);
-    const usersStr = localStorage.getItem('moneytrack_registered_users') || '[]';
+    const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
     const users = JSON.parse(usersStr) as { email: string; password: string; id: string }[];
     
     if (users.find(u => u.email === email)) {
@@ -181,10 +194,10 @@ export class MockDbService implements IDatabaseService {
 
     const newUser = { id: 'usr-' + Math.random().toString(36).substr(2, 9), email, password };
     users.push(newUser);
-    localStorage.setItem('moneytrack_registered_users', JSON.stringify(users));
+    localStorage.setItem('flowfin_registered_users', JSON.stringify(users));
 
     const userProfile: UserProfile = { id: newUser.id, email: newUser.email };
-    localStorage.setItem('moneytrack_current_user', JSON.stringify(userProfile));
+    localStorage.setItem('flowfin_current_user', JSON.stringify(userProfile));
     
     // Seed new data for this specific user if desired (uses their ID)
     this.seedInitialData();
@@ -194,13 +207,13 @@ export class MockDbService implements IDatabaseService {
 
   async signIn(email: string, password: string): Promise<AuthResponse> {
     await delay(500);
-    const usersStr = localStorage.getItem('moneytrack_registered_users') || '[]';
+    const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
     const users = JSON.parse(usersStr) as { email: string; password: string; id: string }[];
     
     // Always allow default login for quick testing
-    if (email === 'admin@moneytrack.com' && password === 'admin123') {
-      const adminProfile = { id: 'default-user-id', email: 'admin@moneytrack.com' };
-      localStorage.setItem('moneytrack_current_user', JSON.stringify(adminProfile));
+    if (email === 'admin@flowfin.com' && password === 'admin123') {
+      const adminProfile = { id: 'default-user-id', email: 'admin@flowfin.com' };
+      localStorage.setItem('flowfin_current_user', JSON.stringify(adminProfile));
       return { user: adminProfile, error: null };
     }
 
@@ -210,28 +223,28 @@ export class MockDbService implements IDatabaseService {
     }
 
     const userProfile: UserProfile = { id: found.id, email: found.email };
-    localStorage.setItem('moneytrack_current_user', JSON.stringify(userProfile));
+    localStorage.setItem('flowfin_current_user', JSON.stringify(userProfile));
     return { user: userProfile, error: null };
   }
 
   async signOut(): Promise<{ error: string | null }> {
     await delay(300);
-    localStorage.removeItem('moneytrack_current_user');
+    localStorage.removeItem('flowfin_current_user');
     return { error: null };
   }
 
   async getCurrentUser(): Promise<UserProfile | null> {
-    const userStr = localStorage.getItem('moneytrack_current_user');
+    const userStr = localStorage.getItem('flowfin_current_user');
     if (!userStr) return null;
     return JSON.parse(userStr) as UserProfile;
   }
 
   async resetPassword(email: string): Promise<{ error: string | null }> {
     await delay(400);
-    const usersStr = localStorage.getItem('moneytrack_registered_users') || '[]';
+    const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
     const users = JSON.parse(usersStr) as { email: string; password: string; id: string }[];
     const found = users.find(u => u.email === email);
-    if (!found && email !== 'admin@moneytrack.com') {
+    if (!found && email !== 'admin@flowfin.com') {
       return { error: 'Email tidak ditemukan.' };
     }
     return { error: null };
@@ -240,7 +253,7 @@ export class MockDbService implements IDatabaseService {
   // --- Wallets ---
   async getWallets(): Promise<Wallet[]> {
     await delay(200);
-    const walletsStr = localStorage.getItem('moneytrack_wallets') || '[]';
+    const walletsStr = localStorage.getItem('flowfin_wallets') || '[]';
     const all = JSON.parse(walletsStr) as Wallet[];
     const userId = this.getActiveUserId();
     return all.filter(w => w.user_id === userId);
@@ -248,7 +261,7 @@ export class MockDbService implements IDatabaseService {
 
   async addWallet(name: string, balance: number): Promise<Wallet> {
     await delay(200);
-    const allWalletsStr = localStorage.getItem('moneytrack_wallets') || '[]';
+    const allWalletsStr = localStorage.getItem('flowfin_wallets') || '[]';
     const all = JSON.parse(allWalletsStr) as Wallet[];
 
     const newWallet: Wallet = {
@@ -258,13 +271,13 @@ export class MockDbService implements IDatabaseService {
       balance,
     };
     all.push(newWallet);
-    localStorage.setItem('moneytrack_wallets', JSON.stringify(all));
+    localStorage.setItem('flowfin_wallets', JSON.stringify(all));
     return newWallet;
   }
 
   async updateWallet(id: string, name: string, balance: number): Promise<Wallet> {
     await delay(200);
-    const allWalletsStr = localStorage.getItem('moneytrack_wallets') || '[]';
+    const allWalletsStr = localStorage.getItem('flowfin_wallets') || '[]';
     let all = JSON.parse(allWalletsStr) as Wallet[];
     
     let updatedWallet: Wallet | null = null;
@@ -277,22 +290,22 @@ export class MockDbService implements IDatabaseService {
     });
 
     if (!updatedWallet) throw new Error('Wallet tidak ditemukan.');
-    localStorage.setItem('moneytrack_wallets', JSON.stringify(all));
+    localStorage.setItem('flowfin_wallets', JSON.stringify(all));
     return updatedWallet;
   }
 
   async deleteWallet(id: string): Promise<void> {
     await delay(200);
-    const allWalletsStr = localStorage.getItem('moneytrack_wallets') || '[]';
+    const allWalletsStr = localStorage.getItem('flowfin_wallets') || '[]';
     const all = JSON.parse(allWalletsStr) as Wallet[];
     const filtered = all.filter(w => w.id !== id);
-    localStorage.setItem('moneytrack_wallets', JSON.stringify(filtered));
+    localStorage.setItem('flowfin_wallets', JSON.stringify(filtered));
   }
 
   // --- Categories ---
   async getCategories(): Promise<Category[]> {
     await delay(100);
-    const categoriesStr = localStorage.getItem('moneytrack_categories') || '[]';
+    const categoriesStr = localStorage.getItem('flowfin_categories') || '[]';
     const all = JSON.parse(categoriesStr) as Category[];
     const userId = this.getActiveUserId();
     return all.filter(c => c.user_id === userId);
@@ -300,7 +313,7 @@ export class MockDbService implements IDatabaseService {
 
   async addCategory(name: string, type: 'income' | 'expense'): Promise<Category> {
     await delay(150);
-    const allCategoriesStr = localStorage.getItem('moneytrack_categories') || '[]';
+    const allCategoriesStr = localStorage.getItem('flowfin_categories') || '[]';
     const all = JSON.parse(allCategoriesStr) as Category[];
 
     const newCategory: Category = {
@@ -310,13 +323,13 @@ export class MockDbService implements IDatabaseService {
       type,
     };
     all.push(newCategory);
-    localStorage.setItem('moneytrack_categories', JSON.stringify(all));
+    localStorage.setItem('flowfin_categories', JSON.stringify(all));
     return newCategory;
   }
 
   async updateCategory(id: string, name: string, type: 'income' | 'expense'): Promise<Category> {
     await delay(150);
-    const allCategoriesStr = localStorage.getItem('moneytrack_categories') || '[]';
+    const allCategoriesStr = localStorage.getItem('flowfin_categories') || '[]';
     let all = JSON.parse(allCategoriesStr) as Category[];
 
     let updated: Category | null = null;
@@ -329,22 +342,22 @@ export class MockDbService implements IDatabaseService {
     });
 
     if (!updated) throw new Error('Kategori tidak ditemukan.');
-    localStorage.setItem('moneytrack_categories', JSON.stringify(all));
+    localStorage.setItem('flowfin_categories', JSON.stringify(all));
     return updated;
   }
 
   async deleteCategory(id: string): Promise<void> {
     await delay(150);
-    const allCategoriesStr = localStorage.getItem('moneytrack_categories') || '[]';
+    const allCategoriesStr = localStorage.getItem('flowfin_categories') || '[]';
     const all = JSON.parse(allCategoriesStr) as Category[];
     const filtered = all.filter(c => c.id !== id);
-    localStorage.setItem('moneytrack_categories', JSON.stringify(filtered));
+    localStorage.setItem('flowfin_categories', JSON.stringify(filtered));
   }
 
   // --- Transactions ---
   async getTransactions(): Promise<Transaction[]> {
     await delay(250);
-    const txsStr = localStorage.getItem('moneytrack_transactions') || '[]';
+    const txsStr = localStorage.getItem('flowfin_transactions') || '[]';
     const allTxs = JSON.parse(txsStr) as Transaction[];
     const userId = this.getActiveUserId();
     const userTxs = allTxs.filter(t => t.user_id === userId);
@@ -362,7 +375,7 @@ export class MockDbService implements IDatabaseService {
 
   async addTransaction(transaction: Omit<Transaction, 'id' | 'user_id'>): Promise<Transaction> {
     await delay(300);
-    const allTxsStr = localStorage.getItem('moneytrack_transactions') || '[]';
+    const allTxsStr = localStorage.getItem('flowfin_transactions') || '[]';
     const all = JSON.parse(allTxsStr) as Transaction[];
     const userId = this.getActiveUserId();
 
@@ -373,10 +386,10 @@ export class MockDbService implements IDatabaseService {
     };
 
     all.push(newTx);
-    localStorage.setItem('moneytrack_transactions', JSON.stringify(all));
+    localStorage.setItem('flowfin_transactions', JSON.stringify(all));
 
     // Update wallet balance
-    const walletsStr = localStorage.getItem('moneytrack_wallets') || '[]';
+    const walletsStr = localStorage.getItem('flowfin_wallets') || '[]';
     const wallets = JSON.parse(walletsStr) as Wallet[];
     const updatedWallets = wallets.map(w => {
       if (w.id === transaction.wallet_id) {
@@ -385,16 +398,16 @@ export class MockDbService implements IDatabaseService {
       }
       return w;
     });
-    localStorage.setItem('moneytrack_wallets', JSON.stringify(updatedWallets));
+    localStorage.setItem('flowfin_wallets', JSON.stringify(updatedWallets));
 
     return newTx;
   }
 
   async updateTransaction(id: string, transaction: Partial<Omit<Transaction, 'id' | 'user_id'>>): Promise<Transaction> {
     await delay(300);
-    const allTxsStr = localStorage.getItem('moneytrack_transactions') || '[]';
+    const allTxsStr = localStorage.getItem('flowfin_transactions') || '[]';
     let all = JSON.parse(allTxsStr) as Transaction[];
-    const walletsStr = localStorage.getItem('moneytrack_wallets') || '[]';
+    const walletsStr = localStorage.getItem('flowfin_wallets') || '[]';
     let wallets = JSON.parse(walletsStr) as Wallet[];
 
     const oldTx = all.find(t => t.id === id);
@@ -430,16 +443,16 @@ export class MockDbService implements IDatabaseService {
       return w;
     });
 
-    localStorage.setItem('moneytrack_transactions', JSON.stringify(all));
-    localStorage.setItem('moneytrack_wallets', JSON.stringify(wallets));
+    localStorage.setItem('flowfin_transactions', JSON.stringify(all));
+    localStorage.setItem('flowfin_wallets', JSON.stringify(wallets));
     return newTx;
   }
 
   async deleteTransaction(id: string): Promise<void> {
     await delay(250);
-    const allTxsStr = localStorage.getItem('moneytrack_transactions') || '[]';
+    const allTxsStr = localStorage.getItem('flowfin_transactions') || '[]';
     const all = JSON.parse(allTxsStr) as Transaction[];
-    const walletsStr = localStorage.getItem('moneytrack_wallets') || '[]';
+    const walletsStr = localStorage.getItem('flowfin_wallets') || '[]';
     let wallets = JSON.parse(walletsStr) as Wallet[];
 
     const txToDelete = all.find(t => t.id === id);
@@ -456,14 +469,14 @@ export class MockDbService implements IDatabaseService {
 
     const filtered = all.filter(t => t.id !== id);
     
-    localStorage.setItem('moneytrack_transactions', JSON.stringify(filtered));
-    localStorage.setItem('moneytrack_wallets', JSON.stringify(wallets));
+    localStorage.setItem('flowfin_transactions', JSON.stringify(filtered));
+    localStorage.setItem('flowfin_wallets', JSON.stringify(wallets));
   }
 
   // --- Budgets ---
   async getBudgets(): Promise<Budget[]> {
     await delay(200);
-    const budgetsStr = localStorage.getItem('moneytrack_budgets') || '[]';
+    const budgetsStr = localStorage.getItem('flowfin_budgets') || '[]';
     const all = JSON.parse(budgetsStr) as Budget[];
     const userId = this.getActiveUserId();
     const userBudgets = all.filter(b => b.user_id === userId);
@@ -477,7 +490,7 @@ export class MockDbService implements IDatabaseService {
 
   async addBudget(category_id: string, limit_amount: number, period: string): Promise<Budget> {
     await delay(200);
-    const allBudgetsStr = localStorage.getItem('moneytrack_budgets') || '[]';
+    const allBudgetsStr = localStorage.getItem('flowfin_budgets') || '[]';
     const all = JSON.parse(allBudgetsStr) as Budget[];
     const userId = this.getActiveUserId();
 
@@ -489,13 +502,13 @@ export class MockDbService implements IDatabaseService {
       period,
     };
     all.push(newBudget);
-    localStorage.setItem('moneytrack_budgets', JSON.stringify(all));
+    localStorage.setItem('flowfin_budgets', JSON.stringify(all));
     return newBudget;
   }
 
   async updateBudget(id: string, limit_amount: number, period: string): Promise<Budget> {
     await delay(200);
-    const allBudgetsStr = localStorage.getItem('moneytrack_budgets') || '[]';
+    const allBudgetsStr = localStorage.getItem('flowfin_budgets') || '[]';
     let all = JSON.parse(allBudgetsStr) as Budget[];
 
     let updated: Budget | null = null;
@@ -508,22 +521,22 @@ export class MockDbService implements IDatabaseService {
     });
 
     if (!updated) throw new Error('Budget tidak ditemukan.');
-    localStorage.setItem('moneytrack_budgets', JSON.stringify(all));
+    localStorage.setItem('flowfin_budgets', JSON.stringify(all));
     return updated;
   }
 
   async deleteBudget(id: string): Promise<void> {
     await delay(150);
-    const allBudgetsStr = localStorage.getItem('moneytrack_budgets') || '[]';
+    const allBudgetsStr = localStorage.getItem('flowfin_budgets') || '[]';
     const all = JSON.parse(allBudgetsStr) as Budget[];
     const filtered = all.filter(b => b.id !== id);
-    localStorage.setItem('moneytrack_budgets', JSON.stringify(filtered));
+    localStorage.setItem('flowfin_budgets', JSON.stringify(filtered));
   }
 
   // --- Financial Goals ---
   async getFinancialGoals(): Promise<FinancialGoal[]> {
     await delay(200);
-    const goalsStr = localStorage.getItem('moneytrack_goals') || '[]';
+    const goalsStr = localStorage.getItem('flowfin_goals') || '[]';
     const all = JSON.parse(goalsStr) as FinancialGoal[];
     const userId = this.getActiveUserId();
     return all.filter(g => g.user_id === userId);
@@ -531,7 +544,7 @@ export class MockDbService implements IDatabaseService {
 
   async addFinancialGoal(title: string, target_amount: number, current_amount: number, target_date: string): Promise<FinancialGoal> {
     await delay(200);
-    const allGoalsStr = localStorage.getItem('moneytrack_goals') || '[]';
+    const allGoalsStr = localStorage.getItem('flowfin_goals') || '[]';
     const all = JSON.parse(allGoalsStr) as FinancialGoal[];
     const userId = this.getActiveUserId();
 
@@ -544,13 +557,13 @@ export class MockDbService implements IDatabaseService {
       target_date,
     };
     all.push(newGoal);
-    localStorage.setItem('moneytrack_goals', JSON.stringify(all));
+    localStorage.setItem('flowfin_goals', JSON.stringify(all));
     return newGoal;
   }
 
   async updateFinancialGoal(id: string, title: string, target_amount: number, current_amount: number, target_date: string): Promise<FinancialGoal> {
     await delay(200);
-    const allGoalsStr = localStorage.getItem('moneytrack_goals') || '[]';
+    const allGoalsStr = localStorage.getItem('flowfin_goals') || '[]';
     let all = JSON.parse(allGoalsStr) as FinancialGoal[];
 
     let updated: FinancialGoal | null = null;
@@ -563,13 +576,13 @@ export class MockDbService implements IDatabaseService {
     });
 
     if (!updated) throw new Error('Goal tidak ditemukan.');
-    localStorage.setItem('moneytrack_goals', JSON.stringify(all));
+    localStorage.setItem('flowfin_goals', JSON.stringify(all));
     return updated;
   }
 
   async addGoalFunds(id: string, amount: number): Promise<FinancialGoal> {
     await delay(200);
-    const allGoalsStr = localStorage.getItem('moneytrack_goals') || '[]';
+    const allGoalsStr = localStorage.getItem('flowfin_goals') || '[]';
     let all = JSON.parse(allGoalsStr) as FinancialGoal[];
 
     let updated: FinancialGoal | null = null;
@@ -582,15 +595,15 @@ export class MockDbService implements IDatabaseService {
     });
 
     if (!updated) throw new Error('Goal tidak ditemukan.');
-    localStorage.setItem('moneytrack_goals', JSON.stringify(all));
+    localStorage.setItem('flowfin_goals', JSON.stringify(all));
     return updated;
   }
 
   async deleteFinancialGoal(id: string): Promise<void> {
     await delay(150);
-    const allGoalsStr = localStorage.getItem('moneytrack_goals') || '[]';
+    const allGoalsStr = localStorage.getItem('flowfin_goals') || '[]';
     const all = JSON.parse(allGoalsStr) as FinancialGoal[];
     const filtered = all.filter(g => g.id !== id);
-    localStorage.setItem('moneytrack_goals', JSON.stringify(filtered));
+    localStorage.setItem('flowfin_goals', JSON.stringify(filtered));
   }
 }

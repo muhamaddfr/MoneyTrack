@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dbService } from '../services/db';
+import { useToast } from '../context/ToastContext';
 import { Category, TransactionType } from '../services/db/types';
 import { Plus, Edit2, Trash2, X, ArrowUpRight, ArrowDownLeft, Info } from 'lucide-react';
 
 export const Categories: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Queries
   const { data: categories = [], isLoading: catsLoading } = useQuery({
@@ -33,7 +35,11 @@ export const Categories: React.FC = () => {
       dbService.addCategory(name, type),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      showToast('Kategori berhasil ditambahkan!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menambahkan kategori', 'error');
     }
   });
 
@@ -43,7 +49,11 @@ export const Categories: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] }); // update join names
+      showToast('Kategori berhasil diperbarui!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal memperbarui kategori', 'error');
     }
   });
 
@@ -51,6 +61,10 @@ export const Categories: React.FC = () => {
     mutationFn: (id: string) => dbService.deleteCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      showToast('Kategori berhasil dihapus!', 'success');
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menghapus kategori', 'error');
     }
   });
 

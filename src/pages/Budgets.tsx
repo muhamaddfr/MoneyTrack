@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dbService } from '../services/db';
+import { useToast } from '../context/ToastContext';
 import { Budget } from '../services/db/types';
 import { Plus, Edit2, Trash2, X, AlertTriangle, CheckCircle, Flame } from 'lucide-react';
 
 export const Budgets: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Queries
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
@@ -41,7 +43,11 @@ export const Budgets: React.FC = () => {
       dbService.addBudget(newBudget.category_id, newBudget.limit_amount, newBudget.period),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      showToast('Anggaran berhasil ditambahkan!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menambahkan anggaran', 'error');
     }
   });
 
@@ -50,7 +56,11 @@ export const Budgets: React.FC = () => {
       dbService.updateBudget(id, limit_amount, period),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      showToast('Anggaran berhasil diperbarui!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal memperbarui anggaran', 'error');
     }
   });
 
@@ -58,6 +68,10 @@ export const Budgets: React.FC = () => {
     mutationFn: (id: string) => dbService.deleteBudget(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      showToast('Anggaran berhasil dihapus!', 'success');
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menghapus anggaran', 'error');
     }
   });
 

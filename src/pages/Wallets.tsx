@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dbService } from '../services/db';
+import { useToast } from '../context/ToastContext';
 import { Wallet } from '../services/db/types';
 import { Plus, Edit2, Trash2, X, Wallet as WalletIcon, Info } from 'lucide-react';
 
 export const Wallets: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Queries
   const { data: wallets = [], isLoading } = useQuery({
@@ -27,7 +29,11 @@ export const Wallets: React.FC = () => {
     mutationFn: ({ name, balance }: { name: string; balance: number }) => dbService.addWallet(name, balance),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      showToast('Dompet berhasil ditambahkan!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menambahkan dompet', 'error');
     }
   });
 
@@ -36,7 +42,11 @@ export const Wallets: React.FC = () => {
       dbService.updateWallet(id, name, balance),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      showToast('Dompet berhasil diperbarui!', 'success');
       closeModal();
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal memperbarui dompet', 'error');
     }
   });
 
@@ -44,7 +54,11 @@ export const Wallets: React.FC = () => {
     mutationFn: (id: string) => dbService.deleteWallet(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] }); // since tx balances may get unlinked
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      showToast('Dompet berhasil dihapus!', 'success');
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Gagal menghapus dompet', 'error');
     }
   });
 

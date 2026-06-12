@@ -42,7 +42,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Fallback to localStorage for mock database or missing metadata
-    const savedName = localStorage.getItem(`moneytrack_profile_name_${currentUser.id}`);
+    const oldKey = `moneytrack_profile_name_${currentUser.id}`;
+    const newKey = `flowfin_profile_name_${currentUser.id}`;
+    const oldName = localStorage.getItem(oldKey);
+    if (oldName && !localStorage.getItem(newKey)) {
+      localStorage.setItem(newKey, oldName);
+    }
+    const savedName = localStorage.getItem(newKey);
     setDisplayName(savedName || currentUser.email.split('@')[0]);
   };
 
@@ -112,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Always save to localStorage as a fallback/mock sync
-      localStorage.setItem(`moneytrack_profile_name_${user.id}`, newName);
+      localStorage.setItem(`flowfin_profile_name_${user.id}`, newName);
       setDisplayName(newName);
       return { error: null };
     } catch (e) {

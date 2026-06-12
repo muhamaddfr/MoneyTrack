@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'MoneyTrack - Personal Finance PWA',
-        short_name: 'MoneyTrack',
+        name: 'FlowFin - Personal Finance PWA',
+        short_name: 'FlowFin',
         description: 'Aplikasi Pencatatan Keuangan Pribadi Berbasis Progressive Web App',
         theme_color: '#0f172a',
         background_color: '#0f172a',

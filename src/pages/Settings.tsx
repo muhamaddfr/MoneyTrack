@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { dbService } from '../services/db';
 import { User, Sun, Moon, Info, Settings as SettingsIcon, Check, Monitor } from 'lucide-react';
 
 export const Settings: React.FC = () => {
   const { user, displayName, updateProfileName } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { showToast } = useToast();
 
   const [nameInput, setNameInput] = useState(displayName);
   const [success, setSuccess] = useState<string | null>(null);
@@ -29,8 +31,10 @@ export const Settings: React.FC = () => {
 
     if (res.error) {
       setError(res.error);
+      showToast(res.error, 'error');
     } else {
       setSuccess('Profil berhasil diperbarui!');
+      showToast('Profil berhasil diperbarui!', 'success');
       setTimeout(() => setSuccess(null), 3000);
     }
   };
