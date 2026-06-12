@@ -1,28 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, LogIn, UserPlus } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const { signIn, signUp, resetPassword, signInWithGoogle } = useAuth();
+  const { signIn, signUp, resetPassword, user } = useAuth();
   const navigate = useNavigate();
 
-  const handleGoogleLogin = async () => {
-    setError(null);
-    setSuccess(null);
-    setLoading(true);
-
-    const res = await signInWithGoogle();
-    if (res.error) {
-      setError(res.error);
-      setLoading(false);
-    } else {
-      setSuccess('Mengarahkan ke Google Auth...');
-      setTimeout(() => {
-        navigate('/');
-      }, 1000);
+  useEffect(() => {
+    if (user) {
+      if (user.email_verified) {
+        navigate('/', { replace: true });
+      } else {
+        navigate('/verify-email', { replace: true });
+      }
     }
-  };
+  }, [user, navigate]);
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [isReset, setIsReset] = useState(false);
@@ -211,33 +204,7 @@ export const Login: React.FC = () => {
           </button>
         </form>
 
-        {!isReset && (
-          <>
-            <div className="relative my-5 flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[var(--color-border)] opacity-60"></div>
-              </div>
-              <span className="relative px-3 text-[10px] bg-[var(--color-bg)] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                Atau masuk dengan
-              </span>
-            </div>
 
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full py-2.5 px-4 font-bold text-xs rounded-xl border border-[var(--color-border)] bg-[var(--color-input)] hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-[var(--color-text-primary)]"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69a5.74 5.74 0 0 1-2.49 3.77v3.12h4.02c2.34-2.16 3.69-5.35 3.69-8.74z" />
-                <path fill="#34A853" d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-4.02-3.12c-1.12.75-2.54 1.19-3.94 1.19-3.04 0-5.62-2.06-6.54-4.83H1.31v3.23A12 12 0 0 0 12 24z" />
-                <path fill="#FBBC05" d="M5.46 14.33a7.17 7.17 0 0 1 0-2.66V8.44H1.31a12 12 0 0 0 0 7.12l4.15-3.23z" />
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0 7.34 0 3.38 2.67 1.31 6.56l4.15 3.23c.92-2.77 3.5-4.83 6.54-4.83z" />
-              </svg>
-              Masuk dengan Google
-            </button>
-          </>
-        )}
 
 
 

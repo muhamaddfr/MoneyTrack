@@ -58,6 +58,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
     async function checkUser() {
       try {
         const currentUser = await dbService.getCurrentUser();
@@ -69,7 +71,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       }
     }
-    checkUser();
+
+    if (dbService.provider === 'supabase') {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.user) {
+          const isGoogle = session.user.app_metadata?.provider === 'google';
+          const googleLinked = session.user.identities?.some(id => id.provider === 'google') || isGoogle;
+          const profile: UserProfile = {
+            id: session.user.id,
+            email: session.user.email || '',
+            email_verified: !!session.user.email_confirmed_at || !!session.user.confirmed_at || isGoogle,
+            google_linked: googleLinked
+          };
+          setUser(profile);
+          await loadDisplayName(profile);
+
+          // Clear hash parameters if they are oauth tokens
+          if (window.location.hash && window.location.hash.includes('access_token=')) {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
+        } else {
+          setUser(null);
+          setDisplayName('');
+        }
+        setLoading(false);
+      });
+
+      unsubscribe = () => {
+        subscription.unsubscribe();
+      };
+    } else {
+      // Mock db
+      checkUser();
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
