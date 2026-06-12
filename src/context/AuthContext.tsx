@@ -13,6 +13,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updateProfileName: (name: string) => Promise<{ error: string | null }>;
+  deleteAccount: () => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -127,8 +128,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAccount = async () => {
+    setLoading(true);
+    const res = await dbService.deleteAccount();
+    if (!res.error) {
+      setUser(null);
+      setDisplayName('');
+    }
+    setLoading(false);
+    return res;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, displayName, loading, signIn, signUp, signOut, resetPassword, updateProfileName }}>
+    <AuthContext.Provider value={{ user, displayName, loading, signIn, signUp, signOut, resetPassword, updateProfileName, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

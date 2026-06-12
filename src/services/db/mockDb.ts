@@ -250,6 +250,84 @@ export class MockDbService implements IDatabaseService {
     return { error: null };
   }
 
+  async deleteAccount(): Promise<{ error: string | null }> {
+    await delay(500);
+    const userId = this.getActiveUserId();
+    
+    try {
+      // 1. Hapus profil nama
+      localStorage.removeItem(`flowfin_profile_name_${userId}`);
+
+      // 2. Hapus dari daftar user terdaftar
+      const usersStr = localStorage.getItem('flowfin_registered_users') || '[]';
+      const users = JSON.parse(usersStr) as { email: string; password: string; id: string }[];
+      const updatedUsers = users.filter(u => u.id !== userId);
+      if (updatedUsers.length === 0) {
+        localStorage.removeItem('flowfin_registered_users');
+      } else {
+        localStorage.setItem('flowfin_registered_users', JSON.stringify(updatedUsers));
+      }
+
+      // 3. Hapus transaksi
+      const txsStr = localStorage.getItem('flowfin_transactions') || '[]';
+      const txs = JSON.parse(txsStr) as Transaction[];
+      const updatedTxs = txs.filter(t => t.user_id !== userId);
+      if (updatedTxs.length === 0) {
+        localStorage.removeItem('flowfin_transactions');
+      } else {
+        localStorage.setItem('flowfin_transactions', JSON.stringify(updatedTxs));
+      }
+
+      // 4. Hapus anggaran
+      const budgetsStr = localStorage.getItem('flowfin_budgets') || '[]';
+      const budgets = JSON.parse(budgetsStr) as Budget[];
+      const updatedBudgets = budgets.filter(b => b.user_id !== userId);
+      if (updatedBudgets.length === 0) {
+        localStorage.removeItem('flowfin_budgets');
+      } else {
+        localStorage.setItem('flowfin_budgets', JSON.stringify(updatedBudgets));
+      }
+
+      // 5. Hapus target tabungan
+      const goalsStr = localStorage.getItem('flowfin_goals') || '[]';
+      const goals = JSON.parse(goalsStr) as FinancialGoal[];
+      const updatedGoals = goals.filter(g => g.user_id !== userId);
+      if (updatedGoals.length === 0) {
+        localStorage.removeItem('flowfin_goals');
+      } else {
+        localStorage.setItem('flowfin_goals', JSON.stringify(updatedGoals));
+      }
+
+      // 6. Hapus dompet
+      const walletsStr = localStorage.getItem('flowfin_wallets') || '[]';
+      const wallets = JSON.parse(walletsStr) as Wallet[];
+      const updatedWallets = wallets.filter(w => w.user_id !== userId);
+      if (updatedWallets.length === 0) {
+        localStorage.removeItem('flowfin_wallets');
+      } else {
+        localStorage.setItem('flowfin_wallets', JSON.stringify(updatedWallets));
+      }
+
+      // 7. Hapus kategori
+      const categoriesStr = localStorage.getItem('flowfin_categories') || '[]';
+      const categories = JSON.parse(categoriesStr) as Category[];
+      const updatedCategories = categories.filter(c => c.user_id !== userId);
+      if (updatedCategories.length === 0) {
+        localStorage.removeItem('flowfin_categories');
+      } else {
+        localStorage.setItem('flowfin_categories', JSON.stringify(updatedCategories));
+      }
+
+      // 8. Keluar dari sesi aktif
+      localStorage.removeItem('flowfin_current_user');
+
+      return { error: null };
+    } catch (e) {
+      const err = e as Error;
+      return { error: err.message || 'Gagal menghapus akun.' };
+    }
+  }
+
   // --- Wallets ---
   async getWallets(): Promise<Wallet[]> {
     await delay(200);

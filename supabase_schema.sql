@@ -80,3 +80,13 @@ alter table public.financial_goals enable row level security;
 
 create policy "Users can manage their own financial_goals" on public.financial_goals
   for all using (auth.uid() = user_id);
+
+
+-- 6. Database function to allow users to delete their own account from auth.users
+create or replace function public.delete_user_account()
+returns void as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$ language plpgsql security definer set search_path = public;
+

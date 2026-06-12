@@ -3,10 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { dbService } from '../services/db';
-import { User, Sun, Moon, Info, Settings as SettingsIcon, Check, Monitor } from 'lucide-react';
+import { User, Sun, Moon, Info, Settings as SettingsIcon, Check, Monitor, Trash2, AlertTriangle } from 'lucide-react';
 
 export const Settings: React.FC = () => {
-  const { user, displayName, updateProfileName } = useAuth();
+  const { user, displayName, updateProfileName, deleteAccount } = useAuth();
   const { theme, setTheme } = useTheme();
   const { showToast } = useToast();
 
@@ -14,6 +14,8 @@ export const Settings: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +38,18 @@ export const Settings: React.FC = () => {
       setSuccess('Profil berhasil diperbarui!');
       showToast('Profil berhasil diperbarui!', 'success');
       setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    const res = await deleteAccount();
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+    if (res.error) {
+      showToast(res.error, 'error');
+    } else {
+      showToast('Akun Anda berhasil dihapus permanen.', 'success');
     }
   };
 
@@ -205,6 +219,65 @@ export const Settings: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Danger Zone Card */}
+      <div className="glass-panel rounded-2xl p-6 border border-rose-500/20 bg-rose-500/5 space-y-4">
+        <h3 className="text-base font-bold text-rose-600 dark:text-rose-400 border-b border-rose-500/10 pb-3 flex items-center gap-2">
+          <AlertTriangle size={16} className="text-rose-500" />
+          Zona Bahaya (Danger Zone)
+        </h3>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Hapus Akun Permanen</h4>
+            <p className="text-xs text-slate-550 dark:text-slate-400 leading-normal max-w-md">
+              Menghapus akun Anda akan menghapus seluruh data transaksi, dompet, anggaran, kategori, dan target tabungan secara permanen dari penyimpanan. Tindakan ini tidak dapat dibatalkan.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="px-5 py-2.5 font-bold text-xs rounded-xl text-white bg-rose-600 hover:bg-rose-500 shadow-md shadow-rose-600/10 transition-all cursor-pointer shrink-0 self-start sm:self-center flex items-center gap-1.5"
+          >
+            <Trash2 size={14} />
+            Hapus Akun
+          </button>
+        </div>
+      </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-sm glass-panel rounded-2xl p-6 space-y-4 border border-rose-500/20 animate-slide-up bg-[var(--color-card)] text-[var(--color-text-primary)]">
+            <h3 className="font-bold text-rose-600 dark:text-rose-455 text-lg flex items-center gap-2">
+              <AlertTriangle size={20} className="text-rose-500" />
+              Hapus Akun Permanen
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed">
+              Apakah Anda yakin ingin menghapus akun FlowFin Anda? Tindakan ini <strong>tidak dapat dibatalkan</strong> dan seluruh data keuangan Anda akan dihapus selamanya.
+            </p>
+            
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-850 transition-all cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {deleting ? 'Menghapus...' : 'Ya, Hapus Permanen'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -14,6 +14,7 @@ export interface IDatabaseService {
   signOut(): Promise<{ error: string | null }>;
   getCurrentUser(): Promise<UserProfile | null>;
   resetPassword(email: string): Promise<{ error: string | null }>;
+  deleteAccount(): Promise<{ error: string | null }>;
 
   // Wallets
   getWallets(): Promise<Wallet[]>;

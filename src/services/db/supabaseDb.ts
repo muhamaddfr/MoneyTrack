@@ -78,6 +78,44 @@ export class SupabaseDbService implements IDatabaseService {
     return { error: error ? error.message : null };
   }
 
+  async deleteAccount(): Promise<{ error: string | null }> {
+    try {
+      const userId = await this.getUserId();
+      
+      // Panggil RPC database untuk menghapus user dari auth.users secara aman
+      const { error: rpcErr } = await this.supabase.rpc('delete_user_account');
+      
+      if (rpcErr) {
+        // Jika fungsi RPC belum dipasang di Supabase Editor, jalankan fallback penghapusan data manual di client
+        console.warn('RPC delete_user_account tidak ditemukan di database. Menjalankan fallback...', rpcErr);
+        
+        const { error: txErr } = await this.supabase.from('transactions').delete().eq('user_id', userId);
+        if (txErr) throw txErr;
+
+        const { error: budgetErr } = await this.supabase.from('budgets').delete().eq('user_id', userId);
+        if (budgetErr) throw budgetErr;
+
+        const { error: goalErr } = await this.supabase.from('financial_goals').delete().eq('user_id', userId);
+        if (goalErr) throw goalErr;
+
+        const { error: walletErr } = await this.supabase.from('wallets').delete().eq('user_id', userId);
+        if (walletErr) throw walletErr;
+
+        const { error: categoryErr } = await this.supabase.from('categories').delete().eq('user_id', userId);
+        if (categoryErr) throw categoryErr;
+      }
+
+      // Keluar dari sesi autentikasi Supabase
+      const { error: signOutError } = await this.supabase.auth.signOut();
+      if (signOutError) return { error: signOutError.message };
+
+      return { error: null };
+    } catch (e) {
+      const err = e as Error;
+      return { error: err.message || 'Gagal menghapus akun.' };
+    }
+  }
+
   // --- Wallets ---
   async getWallets(): Promise<Wallet[]> {
     const { data, error } = await this.supabase
