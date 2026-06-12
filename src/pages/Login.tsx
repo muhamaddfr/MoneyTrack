@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, LogIn, UserPlus } from 'lucide-react';
@@ -7,15 +7,77 @@ export const Login: React.FC = () => {
   const { signIn, signUp, resetPassword, user } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      if (user.email_verified) {
-        navigate('/', { replace: true });
-      } else {
-        navigate('/verify-email', { replace: true });
-      }
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [captchaCode, setCaptchaCode] = useState('');
+  const [captchaInput, setCaptchaInput] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  // Generate a random CAPTCHA code
+  const generateCaptcha = () => {
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // exclude confusing chars like 1, I, O, 0
+    let result = '';
+    for (let i = 0; i < 5; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-  }, [user, navigate]);
+    setCaptchaCode(result);
+    setCaptchaInput('');
+  };
+
+  // Draw the CAPTCHA code on a canvas
+  const drawCaptcha = (code: string) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw background color
+    const isDark = document.documentElement.classList.contains('dark');
+    ctx.fillStyle = isDark ? '#1e293b' : '#f1f5f9'; // slate-800 or slate-100
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Add some noise lines
+    ctx.strokeStyle = isDark ? '#475569' : '#cbd5e1'; // slate-600 or slate-300
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.stroke();
+    }
+
+    // Add some noise dots
+    ctx.fillStyle = isDark ? '#64748b' : '#94a3b8'; // slate-500 or slate-400
+    for (let i = 0; i < 30; i++) {
+      ctx.beginPath();
+      ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1 + Math.random() * 1.5, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+
+    // Draw characters
+    ctx.font = 'bold 24px Courier New, monospace';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i < code.length; i++) {
+      const char = code[i];
+      // Random rotation and translation
+      ctx.save();
+      const x = 15 + i * 24 + Math.random() * 6;
+      const y = canvas.height / 2 + (Math.random() * 8 - 4);
+      const angle = (Math.random() * 30 - 15) * Math.PI / 180; // +/- 15 degrees
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      
+      // Random character color
+      const colors = isDark 
+        ? ['#a78bfa', '#818cf8', '#60a5fa', '#34d399', '#f472b6'] 
+        : ['#6d28d9', '#4338ca', '#1d4ed8', '#047857', '#be185d'];
+      ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+      
+      ctx.fillText(char, 0, 0);
+      ctx.restore();
+    }
+  };
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [isReset, setIsReset] = useState(false);
@@ -27,6 +89,31 @@ export const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.email_verified) {
+        navigate('/', { replace: true });
+      } else {
+        navigate('/verify-email', { replace: true });
+      }
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (isSignUp) {
+      generateCaptcha();
+    }
+  }, [isSignUp]);
+
+  useEffect(() => {
+    if (captchaCode) {
+      const timer = setTimeout(() => {
+        drawCaptcha(captchaCode);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [captchaCode]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,9 +144,22 @@ export const Login: React.FC = () => {
         setLoading(false);
         return;
       }
+      if (!acceptedTerms) {
+        setError('Anda harus menyetujui Ketentuan Penggunaan dan Kebijakan Privasi.');
+        setLoading(false);
+        return;
+      }
+      if (captchaInput.trim().toUpperCase() !== captchaCode) {
+        setError('Kode CAPTCHA tidak cocok. Silakan coba lagi.');
+        generateCaptcha();
+        setLoading(false);
+        return;
+      }
+
       const res = await signUp(email, password);
       if (res.error) {
         setError(res.error);
+        generateCaptcha();
       } else {
         setSuccess('Pendaftaran berhasil! Mengalihkan ke dashboard...');
         setTimeout(() => navigate('/'), 1000);
@@ -151,22 +251,72 @@ export const Login: React.FC = () => {
           )}
 
           {isSignUp && !isReset && (
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
-                Konfirmasi Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-500" />
+            <>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
+                  Konfirmasi Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-500" />
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              {/* CAPTCHA Section */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  Verifikasi Keamanan (CAPTCHA)
+                </label>
+                <div className="flex items-center gap-3">
+                  <canvas 
+                    ref={canvasRef} 
+                    width={150} 
+                    height={46} 
+                    className="rounded-xl border border-[var(--color-border)] shadow-inner cursor-pointer"
+                    title="Klik untuk memuat ulang CAPTCHA"
+                    onClick={generateCaptcha}
+                  />
+                  <button
+                    type="button"
+                    onClick={generateCaptcha}
+                    className="py-3 px-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-input)] hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-xs font-bold text-slate-500 dark:text-slate-400 cursor-pointer"
+                  >
+                    Refresh
+                  </button>
+                </div>
                 <input
-                  type="password"
+                  type="text"
                   required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
-                  placeholder="••••••••"
+                  value={captchaInput}
+                  onChange={(e) => setCaptchaInput(e.target.value)}
+                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 px-4 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
+                  placeholder="Masukkan 5 karakter kode di atas"
+                  maxLength={5}
                 />
               </div>
-            </div>
+
+              {/* Terms of Use and Privacy Policy Checkboxes */}
+              <div className="flex items-start gap-3 mt-2">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  required
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-[var(--color-border)] text-violet-600 focus:ring-violet-500 cursor-pointer"
+                />
+                <label htmlFor="terms" className="text-xs text-slate-600 dark:text-slate-400 select-none cursor-pointer">
+                  Saya menyetujui <a href="#terms" className="text-violet-600 dark:text-violet-400 font-semibold hover:underline" onClick={(e) => {e.preventDefault(); alert("Terms of Use: Aplikasi ini digunakan untuk mencatat dan mengelola keuangan pribadi Anda secara aman. Data disimpan lokal atau di cloud Supabase sesuai pilihan Anda.");}}>Ketentuan Penggunaan</a> dan <a href="#privacy" className="text-violet-600 dark:text-violet-400 font-semibold hover:underline" onClick={(e) => {e.preventDefault(); alert("Privacy Policy: Kami menghargai privasi Anda. Data keuangan Anda sepenuhnya milik Anda dan tidak akan dibagikan ke pihak ketiga mana pun.");}}>Kebijakan Privasi</a>.
+                </label>
+              </div>
+            </>
           )}
 
           {!isSignUp && !isReset && (
