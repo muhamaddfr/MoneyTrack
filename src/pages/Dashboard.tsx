@@ -23,7 +23,10 @@ import {
   Calendar,
   Plus,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertTriangle,
+  Target,
+  CheckCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -65,7 +68,12 @@ export const Dashboard: React.FC = () => {
     queryFn: () => dbService.getTransactions(),
   });
 
-  const isLoading = walletsLoading || txsLoading;
+  const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
+    queryKey: ['budgets'],
+    queryFn: () => dbService.getBudgets(),
+  });
+
+  const isLoading = walletsLoading || txsLoading || budgetsLoading;
 
   // Formatting Currency helpers (IDR)
   const formatIDR = (num: number) => {
@@ -127,6 +135,28 @@ export const Dashboard: React.FC = () => {
   const weeklyExpense = thisWeekTxs
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
+
+  // Budget calculations for the Dashboard
+  const activeBudgets = budgets.filter(b => b.period === currentMonth);
+  const getCategorySpending = (catId: string, currentPeriod: string) => {
+    return transactions
+      .filter(
+        t =>
+          t.category_id === catId &&
+          t.type === 'expense' &&
+          t.transaction_date.slice(0, 7) === currentPeriod
+      )
+      .reduce((sum, t) => sum + t.amount, 0);
+  };
+  const getBudgetBarColor = (percentage: number) => {
+    if (percentage > 100) {
+      return 'bg-rose-500 glow-rose';
+    } else if (percentage >= 80) {
+      return 'bg-amber-500';
+    } else {
+      return 'bg-violet-500 glow-brand';
+    }
+  };
 
   // Chart Data: Monthly Income vs Expense (Last 6 Months)
   const getMonthlyChartData = () => {
@@ -258,9 +288,9 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Total Saldo Card */}
-        <div className="glass-panel rounded-2xl p-6 border-l-4 border-violet-500 hover:border-violet-400 transition-all glow-brand">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 border-l-4 border-violet-500 hover:border-violet-400 transition-all glow-brand">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Saldo</span>
@@ -285,7 +315,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Pemasukan Card */}
-        <div className="glass-panel rounded-2xl p-6 border-l-4 border-emerald-500 hover:border-emerald-400 transition-all glow-emerald">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 border-l-4 border-emerald-500 hover:border-emerald-400 transition-all glow-emerald">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pemasukan Hari Ini</span>
             <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 rounded-lg">
@@ -301,7 +331,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Pengeluaran Card */}
-        <div className="glass-panel rounded-2xl p-6 border-l-4 border-rose-500 hover:border-rose-400 transition-all glow-rose">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 border-l-4 border-rose-500 hover:border-rose-400 transition-all glow-rose">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pengeluaran Hari Ini</span>
             <div className="p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg">
@@ -317,7 +347,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Transaksi Card */}
-        <div className="glass-panel rounded-2xl p-6 border-l-4 border-indigo-500 hover:border-indigo-400 transition-all">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 border-l-4 border-indigo-500 hover:border-indigo-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Transaksi</span>
             <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg">
@@ -334,9 +364,9 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Daily & Weekly Cashflow Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Monthly Summary Card */}
-        <div className="glass-panel rounded-2xl p-6 border border-[var(--color-border)] bg-[var(--color-card)] relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 border border-[var(--color-border)] bg-[var(--color-card)] relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 pb-3 mb-4">
             <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 tracking-wider uppercase flex items-center gap-2">
               <Calendar size={14} className="text-violet-500" />
@@ -379,7 +409,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Weekly Summary Card */}
-        <div className="glass-panel rounded-2xl p-6 border border-[var(--color-border)] bg-[var(--color-card)] relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 border border-[var(--color-border)] bg-[var(--color-card)] relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 pb-3 mb-4">
             <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 tracking-wider uppercase flex items-center gap-2">
               <TrendingUp size={14} className="text-violet-500" />
@@ -423,9 +453,9 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Visual Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Monthly Trend Chart */}
-        <div className="lg:col-span-2 glass-panel rounded-2xl p-6">
+        <div className="lg:col-span-2 glass-panel rounded-2xl p-4 sm:p-6">
           <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2">
             Tren Keuangan Bulanan
           </h4>
@@ -460,7 +490,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Category breakdown doughnut */}
-        <div className="glass-panel rounded-2xl p-6">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6">
           <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-6">Pengeluaran Kategori</h4>
           <div className="h-80 flex flex-col items-center justify-center">
             {hasExpenses ? (
@@ -495,9 +525,9 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Third row: Recent Transactions and Wallet Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Recent Transactions List */}
-        <div className="lg:col-span-2 glass-panel rounded-2xl p-6">
+        <div className="lg:col-span-2 glass-panel rounded-2xl p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
             <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200">Transaksi Terbaru</h4>
             <Link to="/transactions" className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline">
@@ -539,32 +569,99 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Wallets Summary List */}
-        <div className="glass-panel rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200">Multi Wallet</h4>
-            <Link to="/wallets" className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline">
-              Kelola
-            </Link>
+        {/* Right side: Wallets & Budget Preview */}
+        <div className="space-y-6">
+          {/* Wallets Summary List */}
+          <div className="glass-panel rounded-2xl p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200">Multi Wallet</h4>
+              <Link to="/wallets" className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline">
+                Kelola
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {wallets.map(w => (
+                <div key={w.id} className="flex items-center justify-between p-4 bg-slate-200/50 dark:bg-[#1a2336] rounded-xl border border-slate-300/40 dark:border-slate-800/80">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-violet-600/20 to-indigo-600/20 flex items-center justify-center border border-violet-500/20 text-violet-600 dark:text-violet-400 shadow-sm">
+                      <WalletIcon size={18} />
+                    </div>
+                    <div>
+                      <h5 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{w.name}</h5>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-550 uppercase tracking-wider font-semibold">Aktif</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <h6 className="font-extrabold text-sm text-slate-800 dark:text-slate-100">{formatIDR(w.balance)}</h6>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="space-y-4">
-            {wallets.map(w => (
-              <div key={w.id} className="flex items-center justify-between p-4 bg-slate-200/50 dark:bg-[#1a2336] rounded-xl border border-slate-300/40 dark:border-slate-800/80">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-violet-600/20 to-indigo-600/20 flex items-center justify-center border border-violet-500/20 text-violet-600 dark:text-violet-400 shadow-sm">
-                    <WalletIcon size={18} />
-                  </div>
-                  <div>
-                    <h5 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{w.name}</h5>
-                    <span className="text-[9px] text-slate-500 dark:text-slate-550 uppercase tracking-wider font-semibold">Aktif</span>
-                  </div>
+          {/* Budget Preview List */}
+          <div className="glass-panel rounded-2xl p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Target size={18} className="text-violet-500" />
+                Monitor Anggaran
+              </h4>
+              <Link to="/budgets" className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline">
+                Kelola
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {activeBudgets.length > 0 ? (
+                activeBudgets.map(b => {
+                  const spent = getCategorySpending(b.category_id, b.period);
+                  const percentage = b.limit_amount > 0 ? (spent / b.limit_amount) * 100 : 0;
+                  const barColor = getBudgetBarColor(percentage);
+
+                  return (
+                    <div key={b.id} className="p-3.5 bg-slate-200/50 dark:bg-[#1a2336] rounded-xl border border-slate-300/40 dark:border-slate-800/80 space-y-2.5">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h5 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{b.category_name}</h5>
+                          <span className="text-[9px] text-slate-550 dark:text-slate-450 uppercase font-bold tracking-wider">Bulan Ini</span>
+                        </div>
+                        <span className={`text-[10px] font-extrabold py-0.5 px-2 rounded-md ${
+                          percentage > 100 
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-455 border border-rose-500/20' 
+                            : percentage >= 80 
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-450 border border-amber-500/20' 
+                            : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border border-emerald-500/20'
+                        }`}>
+                          {percentage.toFixed(0)}%
+                        </span>
+                      </div>
+                      
+                      {/* Outer progress bar */}
+                      <div className="w-full h-2 bg-slate-300/50 dark:bg-slate-850 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-550 ${barColor}`}
+                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-between text-[10px] text-slate-550 dark:text-slate-400">
+                        <span>Terpakai: <strong className="text-slate-700 dark:text-slate-300 font-bold">{formatIDR(spent)}</strong></span>
+                        <span>Limit: <strong className="text-slate-700 dark:text-slate-300 font-bold">{formatIDR(b.limit_amount)}</strong></span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8 border border-dashed border-slate-300/60 dark:border-slate-800/50 rounded-xl bg-slate-200/20 dark:bg-slate-850/10">
+                  <AlertTriangle size={24} className="mx-auto text-slate-400 dark:text-slate-500 mb-2" />
+                  <p className="text-xs text-slate-550 dark:text-slate-450">Belum ada anggaran bulan ini.</p>
+                  <Link to="/budgets" className="text-[10px] font-bold text-violet-600 dark:text-violet-400 mt-2 block hover:underline">
+                    Buat Anggaran Sekarang
+                  </Link>
                 </div>
-                <div className="text-right">
-                  <h6 className="font-extrabold text-sm text-slate-800 dark:text-slate-100">{formatIDR(w.balance)}</h6>
-                </div>
-              </div>
-            ))}
+              )}
+            </div>
           </div>
         </div>
       </div>

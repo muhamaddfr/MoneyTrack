@@ -205,13 +205,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* App Version Info */}
           <div className="mt-6 pt-4 border-t border-[var(--color-border)]/60 text-center">
             <span className="text-[10px] font-extrabold tracking-widest text-slate-400 dark:text-slate-500 block uppercase">
-              V1.0 FLOWFIN
+              v.4.0 FLOWFIN
             </span>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto pb-24 md:pb-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-32 md:pb-8 max-w-7xl mx-auto w-full">
           <div className="animate-fade-in">
             {children}
           </div>

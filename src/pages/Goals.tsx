@@ -188,6 +188,36 @@ export const Goals: React.FC = () => {
     }).format(num);
   };
 
+  const calculateSavingsRate = (targetDateStr: string, remaining: number) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(targetDateStr);
+    target.setHours(0, 0, 0, 0);
+    
+    const diffTime = target.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 0) {
+      return {
+        days: 0,
+        daily: remaining,
+        weekly: remaining,
+        monthly: remaining
+      };
+    }
+
+    const daily = remaining / diffDays;
+    const weekly = remaining / (diffDays / 7);
+    const monthly = remaining / (diffDays / 30);
+
+    return {
+      days: diffDays,
+      daily,
+      weekly: weekly > remaining ? remaining : weekly,
+      monthly: monthly > remaining ? remaining : monthly
+    };
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -271,6 +301,30 @@ export const Goals: React.FC = () => {
                       </p>
                     )}
                   </div>
+
+                  {/* Estimated Required Savings Rate */}
+                  {remaining > 0 && (() => {
+                    const rate = calculateSavingsRate(g.target_date, remaining);
+                    return (
+                      <div className="mt-4 p-3 bg-violet-500/5 dark:bg-violet-500/10 rounded-xl border border-violet-500/10 dark:border-violet-500/20 text-[10px] space-y-1 text-slate-650 dark:text-slate-350">
+                        <span className="font-extrabold uppercase tracking-wider text-[8px] text-violet-650 dark:text-violet-400 block mb-1">
+                          Estimasi Tabungan Wajib ({rate.days} Hari Lagi)
+                        </span>
+                        <div className="flex justify-between">
+                          <span>Harian:</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{formatIDR(rate.daily)} /hari</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Mingguan:</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{formatIDR(rate.weekly)} /minggu</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Bulanan:</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{formatIDR(rate.monthly)} /bulan</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Actions */}
