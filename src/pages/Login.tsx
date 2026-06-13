@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, LogIn, UserPlus, Check } from 'lucide-react';
+import { Mail, Lock, LogIn, UserPlus, Check, Eye, EyeOff } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { signIn, signUp, resetPassword, user } = useAuth();
@@ -89,6 +89,8 @@ export const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -239,13 +241,21 @@ export const Login: React.FC = () => {
               <div className="relative">
                 <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-500" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
+                  className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-11 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3.5 text-slate-550 hover:text-slate-700 dark:hover:text-slate-350 transition-all cursor-pointer flex items-center justify-center"
+                  title={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
           )}
@@ -259,13 +269,21 @@ export const Login: React.FC = () => {
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-slate-500" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
+                    className="w-full bg-[var(--color-input)] border border-[var(--color-border)] focus:border-violet-500 focus:outline-none rounded-xl py-3 pl-11 pr-11 text-[var(--color-text-primary)] placeholder-slate-400 dark:placeholder-slate-550 text-sm transition-all"
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3.5 top-3.5 text-slate-555 hover:text-slate-700 dark:hover:text-slate-350 transition-all cursor-pointer flex items-center justify-center"
+                    title={showConfirmPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
                 {confirmPassword && (
                   <div className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold">
