@@ -41,6 +41,99 @@ ChartJS.register(
   ArcElement
 );
 
+// Jakarta timezone date helpers
+const getJakartaParts = (d: Date = new Date()) => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  });
+  const parts = formatter.formatToParts(d);
+  const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return {
+    year: parseInt(partMap.year, 10),
+    month: parseInt(partMap.month, 10),
+    day: parseInt(partMap.day, 10)
+  };
+};
+
+const getJakartaDateString = (d: Date = new Date()): string => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const parts = formatter.formatToParts(d);
+  const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return `${partMap.year}-${partMap.month}-${partMap.day}`;
+};
+
+const getJakartaMonthString = (d: Date = new Date()): string => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit'
+  });
+  const parts = formatter.formatToParts(d);
+  const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return `${partMap.year}-${partMap.month}`;
+};
+
+const getJakartaFormattedDate = (d: Date = new Date()): string => {
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(d);
+};
+
+const getJakartaFormattedMonthShort = (d: Date = new Date()): string => {
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    month: 'short'
+  }).format(d);
+};
+
+const getJakartaWeekRange = (d: Date = new Date()) => {
+  const parts = getJakartaParts(d);
+  const jakartaLocal = new Date(parts.year, parts.month - 1, parts.day);
+  const dayOfWeek = jakartaLocal.getDay();
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  
+  const monday = new Date(jakartaLocal);
+  monday.setDate(jakartaLocal.getDate() + diffToMonday);
+  
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  
+  const formatLocal = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  };
+  
+  return {
+    start: formatLocal(monday),
+    end: formatLocal(sunday)
+  };
+};
+
+const getJakartaLast6Months = (d: Date = new Date()): string[] => {
+  const parts = getJakartaParts(d);
+  const months: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const targetMonthDate = new Date(parts.year, parts.month - 1 - i, 1);
+    const y = targetMonthDate.getFullYear();
+    const m = String(targetMonthDate.getMonth() + 1).padStart(2, '0');
+    months.push(`${y}-${m}`);
+  }
+  return months;
+};
+
 export const Dashboard: React.FC = () => {
   const { theme } = useTheme();
 
@@ -89,7 +182,7 @@ export const Dashboard: React.FC = () => {
 
   // Calculations
   const totalBalance = wallets.reduce((sum, w) => sum + w.balance, 0);
-  const currentMonth = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
+  const currentMonth = getJakartaMonthString(); // 'YYYY-MM'
 
   const currentMonthTxs = transactions.filter(t => t.transaction_date.slice(0, 7) === currentMonth);
   const totalIncomeThisMonth = currentMonthTxs
@@ -102,8 +195,8 @@ export const Dashboard: React.FC = () => {
 
   const totalTxsCount = transactions.length;
 
-  // Harian (Daily) Calculations
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Harian (Daily) Calculations (Jakarta Time)
+  const todayStr = getJakartaDateString();
   const todayTxs = transactions.filter(t => t.transaction_date === todayStr);
   const todayIncome = todayTxs
     .filter(t => t.type === 'income')
@@ -112,21 +205,10 @@ export const Dashboard: React.FC = () => {
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Mingguan (Weekly) Calculations
-  const getStartOfWeek = (date: Date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday start
-    const start = new Date(d.setDate(diff));
-    start.setHours(0, 0, 0, 0);
-    return start;
-  };
-
-  const startOfWeek = getStartOfWeek(new Date());
-  const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(endOfWeek.getDate() + 6);
-  const endOfWeekStr = endOfWeek.toISOString().split('T')[0];
+  // Mingguan (Weekly) Calculations (Jakarta Time)
+  const weekRange = getJakartaWeekRange();
+  const startOfWeekStr = weekRange.start;
+  const endOfWeekStr = weekRange.end;
 
   const thisWeekTxs = transactions.filter(t => t.transaction_date >= startOfWeekStr && t.transaction_date <= endOfWeekStr);
   const weeklyIncome = thisWeekTxs
@@ -162,13 +244,11 @@ export const Dashboard: React.FC = () => {
   const getMonthlyChartData = () => {
     const monthlyStats: { [month: string]: { income: number; expense: number } } = {};
     
-    // Initialize last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      const mLabel = d.toISOString().slice(0, 7);
+    // Initialize last 6 months in Jakarta time
+    const last6Months = getJakartaLast6Months();
+    last6Months.forEach(mLabel => {
       monthlyStats[mLabel] = { income: 0, expense: 0 };
-    }
+    });
 
     // Populate stats
     transactions.forEach(t => {
@@ -326,7 +406,7 @@ export const Dashboard: React.FC = () => {
             {formatIDR(todayIncome)}
           </h3>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
-            <Calendar size={10} /> {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            <Calendar size={10} /> {getJakartaFormattedDate()}
           </p>
         </div>
 
@@ -342,7 +422,7 @@ export const Dashboard: React.FC = () => {
             {formatIDR(todayExpense)}
           </h3>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
-            <Calendar size={10} /> {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            <Calendar size={10} /> {getJakartaFormattedDate()}
           </p>
         </div>
 
@@ -373,7 +453,7 @@ export const Dashboard: React.FC = () => {
               Aliran Dana Bulan Ini
             </h4>
             <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-200/50 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-[var(--color-border)]">
-              {new Date().toLocaleDateString('id-ID', { month: 'short' })}
+              {getJakartaFormattedMonthShort()}
             </span>
           </div>
           

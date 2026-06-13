@@ -4,7 +4,7 @@ import { dbService } from '../services/db';
 import { Transaction } from '../services/db/types';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
-import { FileDown, Calendar, TrendingUp, TrendingDown, ArrowLeftRight, Award } from 'lucide-react';
+import { FileDown, Calendar, TrendingUp, TrendingDown, ArrowLeftRight, Award, ChevronDown, ChevronUp } from 'lucide-react';
 
 export const Reports: React.FC = () => {
   // Queries
@@ -15,6 +15,7 @@ export const Reports: React.FC = () => {
 
   // State
   const [reportType, setReportType] = useState<'daily' | 'monthly' | 'yearly'>('monthly');
+  const [showDetails, setShowDetails] = useState(false);
   
   // Date values
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -45,6 +46,28 @@ export const Reports: React.FC = () => {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const netCashflow = totalIncome - totalExpense;
+
+  // Calculate average expenses for daily, weekly, monthly
+  let numDays = 1;
+  if (reportType === 'daily') {
+    numDays = 1;
+  } else if (reportType === 'monthly') {
+    const [yStr, mStr] = selectedMonth.split('-');
+    const year = parseInt(yStr, 10);
+    const month = parseInt(mStr, 10);
+    numDays = new Date(year, month, 0).getDate(); // Actual number of days in selected month
+  } else if (reportType === 'yearly') {
+    const year = parseInt(selectedYear, 10);
+    const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+    numDays = isLeap ? 366 : 365;
+  }
+
+  const numWeeks = numDays / 7;
+  const numMonths = reportType === 'yearly' ? 12 : (reportType === 'monthly' ? 1 : numDays / 30.417);
+
+  const avgDailyExpense = totalExpense / numDays;
+  const avgWeeklyExpense = totalExpense / numWeeks;
+  const avgMonthlyExpense = totalExpense / numMonths;
 
   // Calculate Largest Expense Category
   const getLargestExpenseCategory = (): { name: string; amount: number } => {
@@ -454,58 +477,107 @@ export const Reports: React.FC = () => {
         </div>
       </div>
 
+      {/* Average Expense Statistics Card */}
+      <div className="glass-panel rounded-2xl p-5 border border-[var(--color-border)] bg-[var(--color-card)] animate-fade-in">
+        <div className="border-b border-slate-200 dark:border-slate-800/80 pb-3 mb-4">
+          <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-205 tracking-wider uppercase flex items-center gap-2">
+            <TrendingDown size={14} className="text-violet-500" />
+            Statistik Rata-rata Pengeluaran
+          </h4>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Rata-rata Harian */}
+          <div className="p-4 bg-slate-200/30 dark:bg-slate-850/20 rounded-xl border border-slate-300/20 dark:border-slate-800/40 hover:border-slate-350 dark:hover:border-slate-700 transition-all">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Rata-rata Harian</span>
+            <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mt-2 tracking-tight">
+              {formatIDR(avgDailyExpense)}
+            </h3>
+            <p className="text-[9px] text-slate-400 dark:text-slate-550 mt-1">Berdasarkan total periode terpilih</p>
+          </div>
+
+          {/* Rata-rata Mingguan */}
+          <div className="p-4 bg-slate-200/30 dark:bg-slate-850/20 rounded-xl border border-slate-300/20 dark:border-slate-800/40 hover:border-slate-350 dark:hover:border-slate-700 transition-all">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Rata-rata Mingguan</span>
+            <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mt-2 tracking-tight">
+              {formatIDR(avgWeeklyExpense)}
+            </h3>
+            <p className="text-[9px] text-slate-400 dark:text-slate-550 mt-1">Kelompok rata-rata 7 hari</p>
+          </div>
+
+          {/* Rata-rata Bulanan */}
+          <div className="p-4 bg-slate-200/30 dark:bg-slate-850/20 rounded-xl border border-slate-300/20 dark:border-slate-800/40 hover:border-slate-350 dark:hover:border-slate-700 transition-all">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Rata-rata Bulanan</span>
+            <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mt-2 tracking-tight">
+              {formatIDR(avgMonthlyExpense)}
+            </h3>
+            <p className="text-[9px] text-slate-400 dark:text-slate-550 mt-1">Estimasi rata-rata bulanan</p>
+          </div>
+        </div>
+      </div>
+
       {/* Transaction List Table */}
       <div className="glass-panel rounded-2xl p-6 border border-[var(--color-border)]">
-        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-300 uppercase tracking-wider mb-4">
-          Detail Transaksi Periode ini
-        </h4>
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="w-full flex items-center justify-between text-left font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-sm focus:outline-none cursor-pointer"
+        >
+          <span>Detail Transaksi Periode ini</span>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-violet-600 dark:text-violet-400 border border-violet-500/20 bg-violet-500/5 dark:bg-violet-500/10 px-3 py-1 rounded-xl hover:bg-violet-500/10 dark:hover:bg-violet-500/20 transition-all">
+            {showDetails ? 'Sembunyikan' : 'Tampilkan Detail'}
+            {showDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </div>
+        </button>
 
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2].map(i => (
-              <div key={i} className="h-12 bg-slate-800/10 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : filteredTxs.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
-                  <th className="py-3.5 px-3">Tanggal</th>
-                  <th className="py-3.5 px-3">Catatan</th>
-                  <th className="py-3.5 px-3">Jenis</th>
-                  <th className="py-3.5 px-3">Kategori</th>
-                  <th className="py-3.5 px-3">Wallet</th>
-                  <th className="py-3.5 px-3 text-right">Nominal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/40 text-sm">
-                {filteredTxs.map(t => (
-                  <tr key={t.id} className="hover:bg-slate-200/30 dark:hover:bg-slate-800/5 transition-all">
-                    <td className="py-3.5 px-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{t.transaction_date}</td>
-                    <td className="py-3.5 px-3 font-semibold text-slate-800 dark:text-slate-200">{t.notes || '-'}</td>
-                    <td className="py-3.5 px-3">
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
-                        t.type === 'income' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-455'
-                      }`}>
-                        {t.type === 'income' ? 'Masuk' : 'Keluar'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 text-xs text-slate-700 dark:text-slate-300">{t.category_name}</td>
-                    <td className="py-3.5 px-3 text-xs text-slate-600 dark:text-slate-400">{t.wallet_name}</td>
-                    <td className="py-3.5 px-3 text-right font-bold">
-                      <span className={t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
-                        {t.type === 'income' ? '+' : '-'} {formatIDR(t.amount)}
-                      </span>
-                    </td>
-                  </tr>
+        {showDetails && (
+          <div className="mt-6 border-t border-slate-200 dark:border-slate-800/60 pt-4 animate-fade-in">
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2].map(i => (
+                  <div key={i} className="h-12 bg-slate-800/10 rounded-xl animate-pulse" />
                 ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            Tidak ada transaksi dicatat untuk periode ini.
+              </div>
+            ) : filteredTxs.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
+                      <th className="py-3.5 px-3">Tanggal</th>
+                      <th className="py-3.5 px-3">Catatan</th>
+                      <th className="py-3.5 px-3">Jenis</th>
+                      <th className="py-3.5 px-3">Kategori</th>
+                      <th className="py-3.5 px-3">Wallet</th>
+                      <th className="py-3.5 px-3 text-right">Nominal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/40 text-sm">
+                    {filteredTxs.map(t => (
+                      <tr key={t.id} className="hover:bg-slate-200/30 dark:hover:bg-slate-800/5 transition-all">
+                        <td className="py-3.5 px-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{t.transaction_date}</td>
+                        <td className="py-3.5 px-3 font-semibold text-slate-800 dark:text-slate-200">{t.notes || '-'}</td>
+                        <td className="py-3.5 px-3">
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
+                            t.type === 'income' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450' : 'bg-rose-500/10 text-rose-600 dark:text-rose-455'
+                          }`}>
+                            {t.type === 'income' ? 'Masuk' : 'Keluar'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 text-xs text-slate-700 dark:text-slate-300">{t.category_name}</td>
+                        <td className="py-3.5 px-3 text-xs text-slate-600 dark:text-slate-400">{t.wallet_name}</td>
+                        <td className="py-3.5 px-3 text-right font-bold">
+                          <span className={t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-450'}>
+                            {t.type === 'income' ? '+' : '-'} {formatIDR(t.amount)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-slate-500 text-sm">
+                Tidak ada transaksi dicatat untuk periode ini.
+              </div>
+            )}
           </div>
         )}
       </div>
