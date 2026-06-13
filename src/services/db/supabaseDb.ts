@@ -333,6 +333,49 @@ export class SupabaseDbService implements IDatabaseService {
     return newTx;
   }
 
+  async addTransactions(transactions: Omit<Transaction, 'id' | 'user_id'>[]): Promise<Transaction[]> {
+    if (transactions.length === 0) return [];
+    const userId = await this.getUserId();
+
+    const txsToInsert = transactions.map(t => ({
+      ...t,
+      user_id: userId
+    }));
+
+    const { data: newTxs, error: txError } = await this.supabase
+      .from('transactions')
+      .insert(txsToInsert)
+      .select();
+
+    if (txError) throw txError;
+
+    // Group deltas by wallet
+    const deltas: { [walletId: string]: number } = {};
+    transactions.forEach(t => {
+      const delta = t.type === 'income' ? t.amount : -t.amount;
+      deltas[t.wallet_id] = (deltas[t.wallet_id] || 0) + delta;
+    });
+
+    // Update each wallet balance in a sequential loop (since it's per wallet, there's only 1 update query per unique wallet)
+    const walletIds = Object.keys(deltas);
+    for (const wId of walletIds) {
+      const { data: wallet, error: getError } = await this.supabase
+        .from('wallets')
+        .select('balance')
+        .eq('id', wId)
+        .single();
+      
+      if (!getError && wallet) {
+        await this.supabase
+          .from('wallets')
+          .update({ balance: Number(wallet.balance) + deltas[wId] })
+          .eq('id', wId);
+      }
+    }
+
+    return newTxs as unknown as Transaction[];
+  }
+
   async updateTransaction(id: string, transaction: Partial<Omit<Transaction, 'id' | 'user_id'>>): Promise<Transaction> {
     // Get the old transaction
     const { data: oldTx, error: getOldError } = await this.supabase

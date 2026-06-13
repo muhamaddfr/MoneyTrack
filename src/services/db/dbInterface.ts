@@ -35,6 +35,7 @@ export interface IDatabaseService {
   // Transactions
   getTransactions(): Promise<Transaction[]>;
   addTransaction(transaction: Omit<Transaction, 'id' | 'user_id'>): Promise<Transaction>;
+  addTransactions(transactions: Omit<Transaction, 'id' | 'user_id'>[]): Promise<Transaction[]>;
   updateTransaction(id: string, transaction: Partial<Omit<Transaction, 'id' | 'user_id'>>): Promise<Transaction>;
   deleteTransaction(id: string): Promise<void>;
 

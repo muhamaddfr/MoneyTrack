@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dbService } from '../services/db';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -21,7 +21,9 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Calendar,
-  Plus
+  Plus,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -39,6 +41,19 @@ ChartJS.register(
 export const Dashboard: React.FC = () => {
   const { theme } = useTheme();
 
+  // State for Privacy Mode (Hide Balance)
+  const [privacyMode, setPrivacyMode] = useState(() => {
+    return localStorage.getItem('flowfin_privacy_mode') === 'true';
+  });
+
+  const togglePrivacyMode = () => {
+    setPrivacyMode(prev => {
+      const newVal = !prev;
+      localStorage.setItem('flowfin_privacy_mode', String(newVal));
+      return newVal;
+    });
+  };
+
   // Queries
   const { data: wallets = [], isLoading: walletsLoading } = useQuery({
     queryKey: ['wallets'],
@@ -54,6 +69,9 @@ export const Dashboard: React.FC = () => {
 
   // Formatting Currency helpers (IDR)
   const formatIDR = (num: number) => {
+    if (privacyMode) {
+      return num < 0 ? '-Rp ••••••' : 'Rp ••••••';
+    }
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
@@ -75,6 +93,40 @@ export const Dashboard: React.FC = () => {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalTxsCount = transactions.length;
+
+  // Harian (Daily) Calculations
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayTxs = transactions.filter(t => t.transaction_date === todayStr);
+  const todayIncome = todayTxs
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const todayExpense = todayTxs
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  // Mingguan (Weekly) Calculations
+  const getStartOfWeek = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday start
+    const start = new Date(d.setDate(diff));
+    start.setHours(0, 0, 0, 0);
+    return start;
+  };
+
+  const startOfWeek = getStartOfWeek(new Date());
+  const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(endOfWeek.getDate() + 6);
+  const endOfWeekStr = endOfWeek.toISOString().split('T')[0];
+
+  const thisWeekTxs = transactions.filter(t => t.transaction_date >= startOfWeekStr && t.transaction_date <= endOfWeekStr);
+  const weeklyIncome = thisWeekTxs
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const weeklyExpense = thisWeekTxs
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
 
   // Chart Data: Monthly Income vs Expense (Last 6 Months)
   const getMonthlyChartData = () => {
@@ -210,7 +262,16 @@ export const Dashboard: React.FC = () => {
         {/* Total Saldo Card */}
         <div className="glass-panel rounded-2xl p-6 border-l-4 border-violet-500 hover:border-violet-400 transition-all glow-brand">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Saldo</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Saldo</span>
+              <button
+                onClick={togglePrivacyMode}
+                className="p-1 hover:bg-slate-200/50 dark:hover:bg-slate-800/40 rounded-md text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 transition-all cursor-pointer flex items-center justify-center"
+                title={privacyMode ? "Tampilkan Saldo" : "Sembunyikan Saldo"}
+              >
+                {privacyMode ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
             <div className="p-2 bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-lg">
               <WalletIcon size={20} />
             </div>
@@ -226,32 +287,32 @@ export const Dashboard: React.FC = () => {
         {/* Pemasukan Card */}
         <div className="glass-panel rounded-2xl p-6 border-l-4 border-emerald-500 hover:border-emerald-400 transition-all glow-emerald">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pemasukan Bulan Ini</span>
-            <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pemasukan Hari Ini</span>
+            <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 rounded-lg">
               <TrendingUp size={20} />
             </div>
           </div>
           <h3 className="text-2xl font-extrabold mt-4 tracking-tight text-emerald-600 dark:text-emerald-400">
-            {formatIDR(totalIncomeThisMonth)}
+            {formatIDR(todayIncome)}
           </h3>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
-            <Calendar size={10} /> {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+            <Calendar size={10} /> {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
 
         {/* Pengeluaran Card */}
         <div className="glass-panel rounded-2xl p-6 border-l-4 border-rose-500 hover:border-rose-400 transition-all glow-rose">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pengeluaran Bulan Ini</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pengeluaran Hari Ini</span>
             <div className="p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg">
               <TrendingDown size={20} />
             </div>
           </div>
           <h3 className="text-2xl font-extrabold mt-4 tracking-tight text-rose-600 dark:text-rose-400">
-            {formatIDR(totalExpenseThisMonth)}
+            {formatIDR(todayExpense)}
           </h3>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
-            <Calendar size={10} /> {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+            <Calendar size={10} /> {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
 
@@ -269,6 +330,95 @@ export const Dashboard: React.FC = () => {
           <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
             Pencatatan total aktivitas transaksi
           </p>
+        </div>
+      </div>
+
+      {/* Daily & Weekly Cashflow Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Monthly Summary Card */}
+        <div className="glass-panel rounded-2xl p-6 border border-[var(--color-border)] bg-[var(--color-card)] relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 pb-3 mb-4">
+            <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 tracking-wider uppercase flex items-center gap-2">
+              <Calendar size={14} className="text-violet-500" />
+              Aliran Dana Bulan Ini
+            </h4>
+            <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-200/50 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-[var(--color-border)]">
+              {new Date().toLocaleDateString('id-ID', { month: 'short' })}
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 divide-x divide-slate-200 dark:divide-slate-850/80">
+            {/* Monthly Income */}
+            <div>
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Pemasukan</span>
+              <h3 className="text-lg sm:text-xl font-extrabold mt-1.5 text-emerald-600 dark:text-emerald-450 tracking-tight flex items-center gap-1">
+                <ArrowUpRight size={16} className="shrink-0" />
+                {formatIDR(totalIncomeThisMonth)}
+              </h3>
+            </div>
+            {/* Monthly Expense */}
+            <div className="pl-4">
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Pengeluaran</span>
+              <h3 className="text-lg sm:text-xl font-extrabold mt-1.5 text-rose-600 dark:text-rose-455 tracking-tight flex items-center gap-1">
+                <ArrowDownLeft size={16} className="shrink-0" />
+                {formatIDR(totalExpenseThisMonth)}
+              </h3>
+            </div>
+          </div>
+          
+          <div className="mt-4 pt-3.5 border-t border-slate-200/60 dark:border-slate-850/40 flex items-center justify-between text-xs">
+            <span className="text-slate-550 dark:text-slate-400 font-medium">Selisih Bulan Ini:</span>
+            <span className={`font-bold py-0.5 px-2 rounded-lg text-[9px] border ${
+              totalIncomeThisMonth - totalExpenseThisMonth >= 0 
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/20' 
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-455 border-rose-500/20'
+            }`}>
+              {totalIncomeThisMonth - totalExpenseThisMonth >= 0 ? '+' : ''} {formatIDR(totalIncomeThisMonth - totalExpenseThisMonth)}
+            </span>
+          </div>
+        </div>
+
+        {/* Weekly Summary Card */}
+        <div className="glass-panel rounded-2xl p-6 border border-[var(--color-border)] bg-[var(--color-card)] relative overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 pb-3 mb-4">
+            <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 tracking-wider uppercase flex items-center gap-2">
+              <TrendingUp size={14} className="text-violet-500" />
+              Aliran Dana Minggu Ini
+            </h4>
+            <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-200/50 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-[var(--color-border)]">
+              Aktif
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 divide-x divide-slate-200 dark:divide-slate-850/80">
+            {/* Weekly Income */}
+            <div>
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Pemasukan</span>
+              <h3 className="text-lg sm:text-xl font-extrabold mt-1.5 text-emerald-600 dark:text-emerald-455 tracking-tight flex items-center gap-1">
+                <ArrowUpRight size={16} className="shrink-0" />
+                {formatIDR(weeklyIncome)}
+              </h3>
+            </div>
+            {/* Weekly Expense */}
+            <div className="pl-4">
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Pengeluaran</span>
+              <h3 className="text-lg sm:text-xl font-extrabold mt-1.5 text-rose-600 dark:text-rose-455 tracking-tight flex items-center gap-1">
+                <ArrowDownLeft size={16} className="shrink-0" />
+                {formatIDR(weeklyExpense)}
+              </h3>
+            </div>
+          </div>
+          
+          <div className="mt-4 pt-3.5 border-t border-slate-200/60 dark:border-slate-850/40 flex items-center justify-between text-xs">
+            <span className="text-slate-550 dark:text-slate-400 font-medium">Selisih Minggu Ini:</span>
+            <span className={`font-bold py-0.5 px-2 rounded-lg text-[9px] border ${
+              weeklyIncome - weeklyExpense >= 0 
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/20' 
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-455 border-rose-500/20'
+            }`}>
+              {weeklyIncome - weeklyExpense >= 0 ? '+' : ''} {formatIDR(weeklyIncome - weeklyExpense)}
+            </span>
+          </div>
         </div>
       </div>
 

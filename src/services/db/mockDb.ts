@@ -606,6 +606,44 @@ export class MockDbService implements IDatabaseService {
     return newTx;
   }
 
+  async addTransactions(transactions: Omit<Transaction, 'id' | 'user_id'>[]): Promise<Transaction[]> {
+    if (transactions.length === 0) return [];
+    await delay(300);
+    const allTxsStr = localStorage.getItem('flowfin_transactions') || '[]';
+    const all = JSON.parse(allTxsStr) as Transaction[];
+    const userId = this.getActiveUserId();
+
+    const newTxs: Transaction[] = transactions.map(t => ({
+      ...t,
+      id: 'tx-' + Math.random().toString(36).substr(2, 9),
+      user_id: userId,
+    }));
+
+    all.push(...newTxs);
+    localStorage.setItem('flowfin_transactions', JSON.stringify(all));
+
+    // Update wallet balances in one go
+    const walletsStr = localStorage.getItem('flowfin_wallets') || '[]';
+    const wallets = JSON.parse(walletsStr) as Wallet[];
+    
+    // Group deltas by wallet
+    const deltas: { [walletId: string]: number } = {};
+    transactions.forEach(t => {
+      const delta = t.type === 'income' ? t.amount : -t.amount;
+      deltas[t.wallet_id] = (deltas[t.wallet_id] || 0) + delta;
+    });
+
+    const updatedWallets = wallets.map(w => {
+      if (deltas[w.id] !== undefined) {
+        return { ...w, balance: w.balance + deltas[w.id] };
+      }
+      return w;
+    });
+    localStorage.setItem('flowfin_wallets', JSON.stringify(updatedWallets));
+
+    return newTxs;
+  }
+
   async updateTransaction(id: string, transaction: Partial<Omit<Transaction, 'id' | 'user_id'>>): Promise<Transaction> {
     await delay(300);
     const allTxsStr = localStorage.getItem('flowfin_transactions') || '[]';
